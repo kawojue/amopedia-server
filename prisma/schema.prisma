@@ -54,9 +54,9 @@ model Practitioner {
 }
 
 model Patient {
-    id       String  @id @default(auto()) @map("_id") @db.ObjectId
-    center   Center? @relation(fields: [centerId], references: [id])
-    centerId String? @unique @db.ObjectId
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    center   Center @relation(fields: [centerId], references: [id])
+    centerId String @unique @db.ObjectId
 }
 
 enum Status {
