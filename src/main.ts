@@ -25,7 +25,8 @@ async function bootstrap() {
     .setTitle('Amorad Documentation')
     .setDescription('All API Endpoints')
     .setVersion('1.0.1')
-    .addServer(`http://localhost:${PORT}/`, 'Local environment')
+    .addServer(`https://amorad.onrender.com`, 'Staging environment')
+    .addServer(`http://localhost:${PORT}`, 'Local environment')
     .addBearerAuth()
     .build()
 
