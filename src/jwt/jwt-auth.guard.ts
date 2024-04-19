@@ -23,18 +23,22 @@ export class RolesGuard implements CanActivate {
 
         try {
             const decoded = this.jwtService.verify(token)
-            if (decoded?.sub && decoded.role === 'user') {
-                return this.prisma.user.findUnique({
-                    where: {
-                        id: decoded.sub
-                    }
-                }).then(user => {
-                    if ((decoded.userStatus !== user.userStatus) || (decoded.userStatus === 'Suspended')) return false
-                    request.user = decoded
-                    return roles.includes(decoded.role)
-                }).catch(error => {
-                    return false
-                })
+            if (decoded?.sub && decoded?.status) {
+                // return this.prisma.user.findUnique({
+                //     where: { id: decoded.sub }
+                // }).then(res => {
+                //     if (
+                //         res.status !== decoded.status ||
+                //         res.status === 'PENDING' ||
+                //         res.status === 'SUSPENDED'
+                //     ) {
+                //         return false
+                //     }
+                //     request.user = decoded
+                //     return roles.includes(decoded.role)
+                // }).catch(error => {
+                //     return false
+                // })
             }
             request.user = decoded
             return roles.includes(decoded.role)

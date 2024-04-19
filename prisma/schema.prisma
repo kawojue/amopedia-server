@@ -6,3 +6,69 @@ datasource db {
 generator client {
     provider = "prisma-client-js"
 }
+
+model Adradospec {
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    email    String @unique
+    fullname String
+    password String
+    role     Roles
+    status   Status
+}
+
+model Center {
+    id           String         @id @default(auto()) @map("_id") @db.ObjectId
+    centerName   String         @unique
+    password     String
+    address      String
+    city         String?
+    state        String
+    zip_code     String?
+    country      String
+    status       Status         @default(PENDING)
+    patients     Patient[]
+    centerAdmins CenterAdmin[]
+    practioners  Practitioner[]
+}
+
+model CenterAdmin {
+    id         String  @id @default(auto()) @map("_id") @db.ObjectId
+    superAdmin Boolean @default(false)
+    fullname   String
+    password   String
+    phone      String  @unique
+    email      String  @unique
+    center     Center  @relation(fields: [centerId], references: [id])
+    centerId   String  @unique @db.ObjectId
+    role       Roles   @default(centerAdmin)
+    status     Status
+}
+
+model Practitioner {
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    password String
+    fullname String
+    role     Roles
+    center   Center @relation(fields: [centerId], references: [id])
+    centerId String @unique @db.ObjectId
+}
+
+model Patient {
+    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    center   Center? @relation(fields: [centerId], references: [id])
+    centerId String? @unique @db.ObjectId
+}
+
+enum Status {
+    ACTIVE
+    PENDING
+    SUSPENDED
+}
+
+enum Roles {
+    admin
+    doctor
+    specialist
+    radiologist
+    centerAdmin
+}
