@@ -19,7 +19,6 @@ async function bootstrap() {
   })
   app.use(express.json({ limit: 500 << 20 }))
   app.useGlobalPipes(new ValidationPipe())
-  app.setGlobalPrefix('/api')
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle('Amorad Documentation')
