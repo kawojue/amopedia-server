@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import { JwtService } from '@nestjs/jwt'
 import { Injectable } from '@nestjs/common'
-import { StatusCodes } from 'enums/StatusCodes'
+import { StatusCodes } from 'enums/statusCodes'
 import { ResponseService } from './response.service'
 
 @Injectable()
