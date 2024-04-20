@@ -19,10 +19,12 @@ model Adradospec {
 model Center {
     id          String               @id @default(auto()) @map("_id") @db.ObjectId
     centerName  String               @unique
+    email       String               @unique
     ip          String
     address     String
     city        String
     state       String
+    phone       String
     zip_code    String?
     country     String
     status      Status               @default(PENDING)
@@ -63,6 +65,7 @@ model CenterPractitioner {
 model Practitioner {
     id             String   @id @default(auto()) @map("_id") @db.ObjectId
     status         Status   @default(PENDING)
+    fullname       String
     email          String   @unique
     phone          String   @unique
     password       String
@@ -74,7 +77,7 @@ model Practitioner {
     zip_code       String?
     country        String
     createdAt      DateTime @default(now())
-    updatedAt      DateTime
+    updatedAt      DateTime @updatedAt
     role           Roles
 }
 

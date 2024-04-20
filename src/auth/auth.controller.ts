@@ -1,18 +1,21 @@
-import { Response } from 'express'
+import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
-import { Body, Controller, Post, Res } from '@nestjs/common'
+import { Body, Controller, Post, Req, Res } from '@nestjs/common'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
+import { ApiTags } from '@nestjs/swagger'
 
+@ApiTags("Auth")
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @Post('/register/organization')
   async organizationSignup(
+    @Req() req: Request,
     @Res() res: Response,
     @Body() body: OrganizationSignupDto
   ) {
-    return await this.authService.organizationSignup(res, body)
+    return await this.authService.organizationSignup(req, res, body)
   }
 
 

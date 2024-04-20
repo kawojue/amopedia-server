@@ -1,9 +1,11 @@
 import { Profession } from 'enums/base'
-import {
-    IsEmail, MaxLength, IsPhoneNumber,
-    IsString, Matches, IsEnum, IsOptional,
-} from 'class-validator'
+import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
+import { titleText } from 'helpers/transformer'
+import {
+    IsEmail, MaxLength, IsEnum, MinLength,
+    IsString, Matches, IsOptional, IsPhoneNumber,
+} from 'class-validator'
 
 export class OrganizationSignupDto {
     @ApiProperty({
@@ -11,6 +13,7 @@ export class OrganizationSignupDto {
     })
     @IsString()
     @MaxLength(100)
+    @Transform(({ value }) => titleText(value))
     fullname: string
 
     @ApiProperty({
@@ -18,6 +21,7 @@ export class OrganizationSignupDto {
     })
     @IsString()
     @MaxLength(100)
+    @Transform(({ value }) => titleText(value))
     organizationName: string
 
     @ApiProperty({
@@ -39,7 +43,8 @@ export class OrganizationSignupDto {
         example: 'Mypswd123'
     })
     @IsString()
-    @MaxLength(72, { message: "Password is too long" })
+    @MinLength(6)
+    @MaxLength(36, { message: "Password is too long" })
     password: string
 
     @ApiProperty({
@@ -54,6 +59,7 @@ export class OrganizationSignupDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     city: string
 
     @ApiProperty({
@@ -61,6 +67,7 @@ export class OrganizationSignupDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     state: string
 
     @ApiProperty({
@@ -75,10 +82,19 @@ export class OrganizationSignupDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     country: string
 }
 
 export class PractitionerSignupDto {
+    @ApiProperty({
+        example: 'Raheem Kawojue'
+    })
+    @IsString()
+    @MaxLength(100)
+    @Transform(({ value }) => titleText(value))
+    fullname: string
+
     @ApiProperty({
         example: 'johndoe@example.com'
     })
@@ -96,7 +112,8 @@ export class PractitionerSignupDto {
         example: 'Mypswd123'
     })
     @IsString()
-    @MaxLength(72, { message: "Password is too long" })
+    @MinLength(6)
+    @MaxLength(36, { message: "Password is too long" })
     password: string
 
     @ApiProperty({
@@ -109,6 +126,7 @@ export class PractitionerSignupDto {
         example: 'Lasuth'
     })
     @IsString()
+    @Transform(({ value }) => titleText(value))
     affiliation: string
 
     @ApiProperty({
@@ -129,6 +147,7 @@ export class PractitionerSignupDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     city: string
 
     @ApiProperty({
@@ -136,6 +155,7 @@ export class PractitionerSignupDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     state: string
 
     @ApiProperty({
@@ -150,5 +170,6 @@ export class PractitionerSignupDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     country: string
 }
