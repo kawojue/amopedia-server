@@ -1,13 +1,14 @@
 import { Profession } from 'enums/base'
+import {
+    Matches, IsOptional, IsPhoneNumber,
+    IsEmail, MaxLength, IsEnum, IsString,
+} from 'class-validator'
+import { PasswordDto } from './password.dto'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
 import { titleText } from 'helpers/transformer'
-import {
-    IsEmail, MaxLength, IsEnum, MinLength,
-    IsString, Matches, IsOptional, IsPhoneNumber,
-} from 'class-validator'
 
-export class OrganizationSignupDto {
+export class OrganizationSignupDto extends PasswordDto {
     @ApiProperty({
         example: 'Raheem Kawojue'
     })
@@ -39,14 +40,6 @@ export class OrganizationSignupDto {
     @MaxLength(14)
     @IsPhoneNumber()
     phone: string
-
-    @ApiProperty({
-        example: 'Mypswd123'
-    })
-    @IsString()
-    @MinLength(6)
-    @MaxLength(36, { message: "Password is too long" })
-    password: string
 
     @ApiProperty({
         example: 'My address'
@@ -87,7 +80,7 @@ export class OrganizationSignupDto {
     country: string
 }
 
-export class PractitionerSignupDto {
+export class PractitionerSignupDto extends PasswordDto {
     @ApiProperty({
         example: 'Raheem Kawojue'
     })
@@ -109,14 +102,6 @@ export class PractitionerSignupDto {
     @MaxLength(14)
     @IsPhoneNumber()
     phone: string
-
-    @ApiProperty({
-        example: 'Mypswd123'
-    })
-    @IsString()
-    @MinLength(6)
-    @MaxLength(36, { message: "Password is too long" })
-    password: string
 
     @ApiProperty({
         enum: Profession

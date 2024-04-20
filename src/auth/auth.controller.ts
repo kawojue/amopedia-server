@@ -1,9 +1,12 @@
 import { Request, Response } from 'express'
+import { AuthGuard } from '@nestjs/passport'
 import { AuthService } from './auth.service'
+import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { EmailDto, LoginDto } from './dto/login.dto'
-import { Body, Controller, Post, Req, Res } from '@nestjs/common'
+import { ChangePasswordDto } from './dto/password.dto'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
-import { ApiTags } from '@nestjs/swagger'
+import { Body, Controller, Patch, Post, Req, Res, UseGuards } from '@nestjs/common'
 
 @ApiTags("Auth")
 @Controller('auth')
@@ -35,11 +38,22 @@ export class AuthController {
     return await this.authService.login(res, body)
   }
 
-  @Post('/reset-password')
+  @Patch('/reset-password')
   async resetPassword(
     @Res() res: Response,
     @Body() body: EmailDto
   ) {
     return await this.authService.resetPassword(res, body)
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Patch('/change-password')
+  async changePassword(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: ChangePasswordDto
+  ) {
+    return await this.authService.changePassword(res, req.user, body)
   }
 }

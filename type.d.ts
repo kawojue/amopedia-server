@@ -5,6 +5,7 @@ interface ExpressUser extends Express.User {
     role: Role
     sub: string
     status: Status
+    modelName?: string
 }
 
 interface IRequest extends Request {
@@ -15,6 +16,7 @@ interface JwtPayload {
     role: Role
     sub: string
     status: Status
+    modelName?: string
 }
 
 interface IFile {

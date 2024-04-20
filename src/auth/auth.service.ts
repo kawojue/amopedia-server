@@ -10,6 +10,7 @@ import { EmailDto, LoginDto } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
+import { ChangePasswordDto } from './dto/password.dto'
 
 @Injectable()
 export class AuthService {
@@ -162,6 +163,7 @@ export class AuthService {
                     data = {
                         id: centerAdmin.id,
                         role: centerAdmin.role,
+                        modelName: 'centerAdmin',
                         status: centerAdmin.status,
                         fullname: centerAdmin.fullname,
                         route: `${centerAdmin.center.id}/dashboard`,
@@ -179,6 +181,7 @@ export class AuthService {
                         id: centerPractitioner.id,
                         route: `assigned-patients`,
                         role: centerPractitioner.role,
+                        modelName: 'centerPractitioner',
                         status: centerPractitioner.status,
                         fullname: centerPractitioner.fullname,
                     }
@@ -194,6 +197,7 @@ export class AuthService {
 
                 data = {
                     id: systemPractitioner.id,
+                    modelName: 'practitioner',
                     route: `assigned-patients`,
                     role: systemPractitioner.role,
                     status: systemPractitioner.status,
@@ -209,6 +213,7 @@ export class AuthService {
                 sub: data.id,
                 role: data.role,
                 status: data.status,
+                modelName: data.modelName,
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
@@ -299,7 +304,7 @@ export class AuthService {
 
             const password = await genPassword()
 
-            await this.prisma[`${data.modelName}`].update({
+            await this.prisma[data.modelName].update({
                 where: { id: data.id },
                 data: {
                     password: await this.encryption.hashAsync(password)
@@ -310,6 +315,33 @@ export class AuthService {
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 message: "Your password has been reset. Please check your email for the new password."
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
+
+    async changePassword(
+        res: Response,
+        { sub, modelName }: ExpressUser,
+        { password, confirmPassword }: ChangePasswordDto
+    ) {
+        try {
+            if (password !== confirmPassword) {
+                return this.response.sendError(res, StatusCodes.BadRequest, "Passwords do not match")
+            }
+
+            const hashedPassword = await this.encryption.hashAsync(password)
+
+            await this.prisma[modelName].update({
+                where: { id: sub },
+                data: {
+                    password: hashedPassword
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                message: "Your password has been updated"
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
