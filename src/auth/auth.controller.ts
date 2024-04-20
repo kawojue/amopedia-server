@@ -1,4 +1,4 @@
-import { LoginDto } from './dto/login.dto'
+import { EmailDto, LoginDto } from './dto/login.dto'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 import { Body, Controller, Post, Req, Res } from '@nestjs/common'
@@ -33,5 +33,13 @@ export class AuthController {
     @Body() body: LoginDto
   ) {
     return await this.authService.login(res, body)
+  }
+
+  @Post('/reset-password')
+  async resetPassword(
+    @Res() res: Response,
+    @Body() body: EmailDto
+  ) {
+    return await this.authService.resetPassword(res, body)
   }
 }

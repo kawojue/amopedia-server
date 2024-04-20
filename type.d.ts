@@ -26,6 +26,9 @@ interface IFile {
 interface ILogin {
     id: string
     role: Role
-    route: string
-    status: Status
+    route?: string
+    status?: Status
+    email?: string
+    fullname: string
+    modelName?: string
 }

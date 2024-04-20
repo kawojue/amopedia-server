@@ -9,7 +9,7 @@ export const genFilename = (orginalname: string) => {
     `
 }
 
-export const genPassword = () => {
+export const genPassword = async () => {
     let password = ''
     let characters = ''
 

@@ -1,11 +1,12 @@
 import { Roles } from '@prisma/client'
-import { LoginDto } from './dto/login.dto'
 import { Request, Response } from 'express'
 import { Injectable } from '@nestjs/common'
 import { MiscService } from 'lib/misc.service'
+import { genPassword } from 'helpers/generator'
 import { StatusCodes } from 'enums/statusCodes'
 import { PrismaService } from 'lib/prisma.service'
 import { getIpAddress } from 'helpers/getIPAddress'
+import { EmailDto, LoginDto } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
@@ -162,6 +163,7 @@ export class AuthService {
                         id: centerAdmin.id,
                         role: centerAdmin.role,
                         status: centerAdmin.status,
+                        fullname: centerAdmin.fullname,
                         route: `${centerAdmin.center.id}/dashboard`,
                     }
                 }
@@ -178,6 +180,7 @@ export class AuthService {
                         route: `assigned-patients`,
                         role: centerPractitioner.role,
                         status: centerPractitioner.status,
+                        fullname: centerPractitioner.fullname,
                     }
                 }
             }
@@ -194,6 +197,7 @@ export class AuthService {
                     route: `assigned-patients`,
                     role: systemPractitioner.role,
                     status: systemPractitioner.status,
+                    fullname: systemPractitioner.fullname,
                 }
             }
 
@@ -211,6 +215,101 @@ export class AuthService {
                 data,
                 access_token,
                 message: "Login successful"
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
+
+    async resetPassword(
+        res: Response,
+        { email }: EmailDto
+    ) {
+        try {
+            const centerAdmin = await this.prisma.centerAdmin.findUnique({
+                where: { email },
+                include: { center: true }
+            })
+
+            const systemPractitioner = await this.prisma.practitioner.findUnique({
+                where: { email },
+                include: { assignedPatients: true }
+            })
+
+            const centerPractitioner = await this.prisma.centerPractitioner.findUnique({
+                where: { email },
+                include: { center: true, assignedPatients: true }
+            })
+
+            if (!centerAdmin && !systemPractitioner && !centerPractitioner) {
+                return this.response.sendError(res, StatusCodes.NotFound, 'There is no account associated with this email')
+            }
+
+            let data = {} as ILogin
+
+            if (centerAdmin || centerPractitioner) {
+                const user = centerAdmin || centerPractitioner
+
+                if (user.center.status === "PENDING") {
+                    return this.response.sendError(res, StatusCodes.Unauthorized, 'Your organization is pending verification')
+                }
+
+                if (user.center.status === "SUSPENDED" || user.status === "SUSPENDED") {
+                    return this.response.sendError(res, StatusCodes.Forbidden, 'Your organization or account has been suspended')
+                }
+
+                if (centerAdmin) {
+                    data = {
+                        id: centerAdmin.id,
+                        role: centerAdmin.role,
+                        modelName: 'centerAdmin',
+                        email: centerAdmin.email,
+                        fullname: centerAdmin.fullname,
+                    }
+                }
+
+                if (centerPractitioner) {
+                    if (centerPractitioner.assignedPatients.length === 0) {
+                        return this.response.sendError(res, StatusCodes.Conflict, "No patients were assigned to you")
+                    }
+
+                    data = {
+                        id: centerPractitioner.id,
+                        role: centerPractitioner.role,
+                        email: centerPractitioner.email,
+                        modelName: 'centerPractitioner',
+                        fullname: centerPractitioner.fullname,
+                    }
+                }
+            }
+
+            if (systemPractitioner) {
+                if (systemPractitioner.assignedPatients.length === 0) {
+                    return this.response.sendError(res, StatusCodes.Conflict, "No patients were assigned to you")
+                }
+
+                data = {
+                    id: systemPractitioner.id,
+                    modelName: 'practitioner',
+                    role: systemPractitioner.role,
+                    email: systemPractitioner.email,
+                    fullname: systemPractitioner.fullname,
+                }
+            }
+
+            const password = await genPassword()
+
+            await this.prisma[`${data.modelName}`].update({
+                where: { id: data.id },
+                data: {
+                    password: await this.encryption.hashAsync(password)
+                }
+            })
+
+            // TODO: Send the user their new password via email
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                message: "Your password has been reset. Please check your email for the new password."
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
