@@ -22,3 +22,10 @@ interface IFile {
     path: string
     type: string
 }
+
+interface ILogin {
+    id: string
+    role: Role
+    route: string
+    status: Status
+}

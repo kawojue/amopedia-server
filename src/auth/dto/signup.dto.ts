@@ -30,6 +30,7 @@ export class OrganizationSignupDto {
     @IsEmail({
         host_blacklist: ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'fastmail.com']
     }, { message: 'Only business email is required' })
+    @Transform(({ value }) => value.toLowerCase().trim())
     email: string
 
     @ApiProperty({
@@ -99,6 +100,7 @@ export class PractitionerSignupDto {
         example: 'johndoe@example.com'
     })
     @IsEmail({}, { message: 'Invalid email address' })
+    @Transform(({ value }) => value.toLowerCase().trim())
     email: string
 
     @ApiProperty({
@@ -133,6 +135,7 @@ export class PractitionerSignupDto {
         example: 'A-12345'
     })
     @IsString()
+    @Transform(({ value }) => value.toUpperCase())
     practiceNumber: string
 
     @ApiProperty({

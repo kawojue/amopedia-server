@@ -18,7 +18,6 @@ export class AuthController {
     return await this.authService.organizationSignup(req, res, body)
   }
 
-
   @Post('/register/practitioner')
   async practitionerSignup(
     @Res() res: Response,
@@ -26,4 +25,6 @@ export class AuthController {
   ) {
     return await this.authService.practitionerSignup(res, body)
   }
+
+
 }
