@@ -10,6 +10,7 @@ export const genFilename = (orginalname: string) => {
 }
 
 export const genPassword = () => {
+    let password = ''
     let characters = ''
 
     const startCharCode: number = 'a'.charCodeAt(0)
@@ -20,7 +21,6 @@ export const genPassword = () => {
     }
 
     const passwordLength = Math.floor(Math.random() * (17 - 8 + 1)) + 8
-    let password = ''
     for (let i = 0; i < passwordLength; i++) {
         const randomIndex = Math.floor(Math.random() * characters.length)
         password += characters[randomIndex]
