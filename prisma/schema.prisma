@@ -17,46 +17,90 @@ model Adradospec {
 }
 
 model Center {
-    id           String         @id @default(auto()) @map("_id") @db.ObjectId
-    centerName   String         @unique
-    password     String
-    address      String
-    city         String?
-    state        String
-    zip_code     String?
-    country      String
-    status       Status         @default(PENDING)
-    patients     Patient[]
-    centerAdmins CenterAdmin[]
-    practioners  Practitioner[]
+    id          String               @id @default(auto()) @map("_id") @db.ObjectId
+    centerName  String               @unique
+    ip          String
+    address     String
+    city        String
+    state       String
+    zip_code    String?
+    country     String
+    status      Status               @default(PENDING)
+    createdAt   DateTime             @default(now())
+    updatedAt   DateTime             @updatedAt
+    patients    Patient[]
+    admins      CenterAdmin[]
+    practioners CenterPractitioner[]
 }
 
 model CenterAdmin {
-    id         String  @id @default(auto()) @map("_id") @db.ObjectId
-    superAdmin Boolean @default(false)
+    id         String   @id @default(auto()) @map("_id") @db.ObjectId
+    superAdmin Boolean  @default(false)
     fullname   String
     password   String
-    phone      String  @unique
-    email      String  @unique
-    center     Center  @relation(fields: [centerId], references: [id])
-    centerId   String  @unique @db.ObjectId
-    role       Roles   @default(centerAdmin)
-    status     Status
+    phone      String   @unique
+    email      String   @unique
+    center     Center   @relation(fields: [centerId], references: [id])
+    centerId   String   @unique @db.ObjectId
+    role       Roles    @default(centerAdmin)
+    status     Status   @default(ACTIVE)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+}
+
+model CenterPractitioner {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    password  String
+    fullname  String
+    role      Roles
+    status    Status   @default(ACTIVE)
+    center    Center   @relation(fields: [centerId], references: [id])
+    centerId  String   @unique @db.ObjectId
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model Practitioner {
-    id       String @id @default(auto()) @map("_id") @db.ObjectId
-    password String
-    fullname String
-    role     Roles
-    center   Center @relation(fields: [centerId], references: [id])
-    centerId String @unique @db.ObjectId
+    id             String   @id @default(auto()) @map("_id") @db.ObjectId
+    status         Status   @default(PENDING)
+    email          String   @unique
+    phone          String   @unique
+    password       String
+    affiliation    String
+    practiceNumber String
+    address        String
+    city           String
+    state          String
+    zip_code       String?
+    country        String
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime
 }
 
 model Patient {
-    id       String @id @default(auto()) @map("_id") @db.ObjectId
-    center   Center @relation(fields: [centerId], references: [id])
-    centerId String @unique @db.ObjectId
+    id            String         @id @default(auto()) @map("_id") @db.ObjectId
+    mrn           String         @unique
+    fullname      String
+    nin           String
+    phone         String
+    dob           DateTime
+    gender        Gender?
+    maritalStatus MaritalStatus?
+    address       String
+    zip_code      String?
+    dicoms        Dicom[]
+    center        Center         @relation(fields: [centerId], references: [id])
+    centerId      String         @unique @db.ObjectId
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+}
+
+model Dicom {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    files     File[]
+    patient   Patient  @relation(references: [id], fields: [patientId])
+    patientId String   @unique @db.ObjectId
+    createdAt DateTime
 }
 
 enum Status {
@@ -65,10 +109,30 @@ enum Status {
     SUSPENDED
 }
 
+enum Gender {
+    Male
+    Female
+}
+
+enum MaritalStatus {
+    Single
+    Married
+    Widowed
+    Divorced
+    Seperated
+}
+
 enum Roles {
     admin
     doctor
     specialist
     radiologist
     centerAdmin
+}
+
+type File {
+    idx  String? @default(uuid())
+    url  String
+    path String
+    type String?
 }
