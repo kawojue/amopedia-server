@@ -1,6 +1,6 @@
-import { EmailDto, LoginDto } from './dto/login.dto'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
+import { EmailDto, LoginDto } from './dto/login.dto'
 import { Body, Controller, Post, Req, Res } from '@nestjs/common'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
 import { ApiTags } from '@nestjs/swagger'
