@@ -4,6 +4,7 @@ import { MiscService } from 'lib/misc.service'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
+import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
 
 @Injectable()
 export class AuthService {
@@ -15,10 +16,30 @@ export class AuthService {
     ) { }
 
     async practitionerSignup(
-        res: Response
-    ) { }
+        res: Response,
+        {
+            address, affiliation, email, city, country, state,
+            password, practiceNumber, profession, phone, zip_code,
+        }: PractitionerSignupDto
+    ) {
+        try {
+
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
 
     async organizationSignup(
-        response: Response
-    ) { }
+        res: Response,
+        {
+            organizationName, fullname, address, state,
+            city, country, email, password, phone, zip_code
+        }: OrganizationSignupDto
+    ) {
+        try {
+
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
 }

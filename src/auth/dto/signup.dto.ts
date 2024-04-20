@@ -1,6 +1,7 @@
+import { Profession } from 'enums/base'
 import {
-    IsEmail, IsOptional, MaxLength,
-    IsString, Matches, IsPhoneNumber,
+    IsEmail, MaxLength, IsPhoneNumber,
+    IsString, Matches, IsEnum, IsOptional,
 } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
@@ -97,6 +98,12 @@ export class PractitionerSignupDto {
     @IsString()
     @MaxLength(72, { message: "Password is too long" })
     password: string
+
+    @ApiProperty({
+        enum: Profession
+    })
+    @IsEnum(Profession)
+    profession: Profession
 
     @ApiProperty({
         example: 'Lasuth'
