@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module'
 import { AppController } from './app.controller'
 import { PassportModule } from '@nestjs/passport'
 import { PrismaService } from 'lib/prisma.service'
+import { CenterModule } from './center/center.module'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 
@@ -14,7 +15,8 @@ import { EncryptionService } from 'lib/encryption.service'
   imports: [
     AuthModule,
     JwtModule,
-    PassportModule.register({ defaultStrategy: 'jwt' })
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    CenterModule
   ],
   controllers: [AppController],
   providers: [
