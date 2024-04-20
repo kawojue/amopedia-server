@@ -1,7 +1,12 @@
 export const genFilename = (orginalname: string) => {
     const [filename, extension] = orginalname.split('.')
 
-    return `${filename}_${new Date().toDateString().split(" ").join('-')}.${extension}`
+    return `
+    ${filename}_${new Date()
+            .toDateString()
+            .split(" ")
+            .join('-')}.${extension}
+    `
 }
 
 export const genPassword = () => {
