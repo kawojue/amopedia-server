@@ -8,9 +8,9 @@ import { PrismaService } from 'lib/prisma.service'
 import { getIpAddress } from 'helpers/getIPAddress'
 import { EmailDto, LoginDto } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
+import { ChangePasswordDto } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
-import { ChangePasswordDto } from './dto/password.dto'
 
 @Injectable()
 export class AuthService {

@@ -52,16 +52,23 @@ model CenterAdmin {
 
 model CenterPractitioner {
     id               String    @id @default(auto()) @map("_id") @db.ObjectId
-    email            String    @unique
-    password         String
     fullname         String
+    email            String    @unique
+    phone            String    @unique
+    password         String
+    practiceNumber   String
+    address          String
+    city             String
+    state            String
+    zip_code         String?
+    country          String
     role             Roles
     status           Status    @default(ACTIVE)
+    assignedPatients Patient[]
     center           Center    @relation(fields: [centerId], references: [id])
     centerId         String    @unique @db.ObjectId
     createdAt        DateTime  @default(now())
     updatedAt        DateTime  @updatedAt
-    assignedPatients Patient[]
 }
 
 model Practitioner {
@@ -94,6 +101,7 @@ model Patient {
     gender               Gender?
     maritalStatus        MaritalStatus?
     address              String
+    status               PatientStatus       @default(Unassigned)
     zip_code             String?
     dicoms               Dicom[]
     center               Center              @relation(fields: [centerId], references: [id])
@@ -118,6 +126,14 @@ enum Status {
     ACTIVE
     PENDING
     SUSPENDED
+}
+
+enum PatientStatus {
+    Closed
+    Opened
+    Assigned
+    Archived
+    Unassigned
 }
 
 enum Gender {
