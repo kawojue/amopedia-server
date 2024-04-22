@@ -163,10 +163,12 @@ export class AuthService {
                     data = {
                         id: centerAdmin.id,
                         role: centerAdmin.role,
+                        email: centerAdmin.email,
                         modelName: 'centerAdmin',
                         status: centerAdmin.status,
+                        avatar: centerAdmin?.avatar,
                         fullname: centerAdmin.fullname,
-                        route: `${centerAdmin.center.id}/dashboard`,
+                        route: `/${centerAdmin.center.id}/dashboard`,
                     }
                 }
 
@@ -179,10 +181,12 @@ export class AuthService {
 
                     data = {
                         id: centerPractitioner.id,
-                        route: `assigned-patients`,
                         role: centerPractitioner.role,
                         modelName: 'centerPractitioner',
+                        email: centerPractitioner.email,
                         status: centerPractitioner.status,
+                        avatar: centerPractitioner?.avatar,
+                        route: `/dashboard/assigned-patients`,
                         fullname: centerPractitioner.fullname,
                     }
                 }
@@ -198,9 +202,11 @@ export class AuthService {
                 data = {
                     id: systemPractitioner.id,
                     modelName: 'practitioner',
-                    route: `assigned-patients`,
                     role: systemPractitioner.role,
+                    email: systemPractitioner.email,
+                    avatar: systemPractitioner?.avatar,
                     status: systemPractitioner.status,
+                    route: `/dashboard/assigned-patients`,
                     fullname: systemPractitioner.fullname,
                 }
             }

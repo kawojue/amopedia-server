@@ -11,6 +11,7 @@ import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
+import { ChangePasswordDto } from 'src/auth/dto/password.dto'
 
 @Injectable()
 export class AdradospecService {
@@ -239,11 +240,11 @@ export class AdradospecService {
 
             const offset = (page - 1) * limit
 
-            let practioners: Practitioner[]
+            let practitioners: Practitioner[]
             let total: number
 
             if (!status) {
-                practioners = await this.prisma.practitioner.findMany({
+                practitioners = await this.prisma.practitioner.findMany({
                     where: {
                         role,
                         OR: [
@@ -260,7 +261,7 @@ export class AdradospecService {
 
                 total = await this.prisma.center.count()
             } else {
-                practioners = await this.prisma.practitioner.findMany({
+                practitioners = await this.prisma.practitioner.findMany({
                     where: {
                         role,
                         status,
@@ -281,7 +282,7 @@ export class AdradospecService {
             }
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { practioners, total }
+                data: { practitioners, total }
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error fetching practitioners")

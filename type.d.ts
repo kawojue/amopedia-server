@@ -29,6 +29,7 @@ interface ILogin {
     id: string
     role: Role
     route?: string
+    avatar?: IFile
     status?: Status
     email?: string
     fullname: string

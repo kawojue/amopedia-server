@@ -5,13 +5,13 @@ import { AuthGuard } from '@nestjs/passport'
 import { LoginDto } from 'src/auth/dto/login.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { InviteDto, SignupDto } from './dto/auth.dto'
+import { FetchPractitionersDTO } from './dto/prac.dto'
 import { AdradospecService } from './adradospec.service'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
 import {
   Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
 } from '@nestjs/common'
-import { FetchPractitionersDTO } from './dto/prac.dto'
 
 @ApiTags("Adradospec")
 @Controller('adradospec')

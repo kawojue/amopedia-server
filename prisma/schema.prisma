@@ -14,6 +14,7 @@ model Adradospec {
     superAdmin Boolean  @default(false)
     password   String
     role       Roles
+    avatar     File?
     status     Status   @default(ACTIVE)
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
@@ -43,6 +44,7 @@ model CenterAdmin {
     superAdmin Boolean  @default(false)
     fullname   String
     password   String
+    avatar     File?
     phone      String   @unique
     email      String   @unique
     center     Center   @relation(fields: [centerId], references: [id])
@@ -60,6 +62,7 @@ model CenterPractitioner {
     phone            String    @unique
     password         String
     practiceNumber   String
+    avatar           File?
     address          String
     city             String
     state            String
@@ -78,6 +81,7 @@ model Practitioner {
     id               String    @id @default(auto()) @map("_id") @db.ObjectId
     status           Status    @default(PENDING)
     fullname         String
+    avatar           File?
     email            String    @unique
     phone            String    @unique
     password         String
