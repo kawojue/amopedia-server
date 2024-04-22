@@ -10,13 +10,15 @@ import { PrismaService } from 'lib/prisma.service'
 import { CenterModule } from './center/center.module'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
+import { AdradospecModule } from './adradospec/adradospec.module'
 
 @Module({
   imports: [
     AuthModule,
     JwtModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    CenterModule
+    CenterModule,
+    AdradospecModule
   ],
   controllers: [AppController],
   providers: [

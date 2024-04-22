@@ -8,12 +8,15 @@ generator client {
 }
 
 model Adradospec {
-    id       String @id @default(auto()) @map("_id") @db.ObjectId
-    email    String @unique
-    fullname String
-    password String
-    role     Roles
-    status   Status
+    id         String   @id @default(auto()) @map("_id") @db.ObjectId
+    email      String   @unique
+    fullname   String
+    superAdmin Boolean  @default(false)
+    password   String
+    role       Roles
+    status     Status   @default(ACTIVE)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
 }
 
 model Center {
@@ -103,7 +106,7 @@ model Patient {
     address              String
     status               PatientStatus       @default(Unassigned)
     zip_code             String?
-    dicoms               Dicom[]
+    dicoms               File[]
     center               Center              @relation(fields: [centerId], references: [id])
     centerId             String              @unique @db.ObjectId
     practitioner         Practitioner?       @relation(fields: [practitionerId], references: [id])
@@ -112,14 +115,6 @@ model Patient {
     centerPractitionerId String?             @unique @db.ObjectId
     createdAt            DateTime            @default(now())
     updatedAt            DateTime            @updatedAt
-}
-
-model Dicom {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    files     File[]
-    patient   Patient  @relation(references: [id], fields: [patientId])
-    patientId String   @unique @db.ObjectId
-    createdAt DateTime
 }
 
 enum Status {
