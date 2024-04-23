@@ -58,7 +58,7 @@ export class AuthService {
             // TODO: mailing
 
             this.response.sendSuccess(res, StatusCodes.Created, {
-                message: "You will be notified when you're verified by our specialist."
+                message: "You will be notified when you're verified by our specialists."
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
@@ -112,7 +112,7 @@ export class AuthService {
             // Todo: mailing
 
             this.response.sendSuccess(res, StatusCodes.Created, {
-                message: "You'll be notified when your organization is verified by our admin"
+                message: "You'll be notified when your organization is verified by our Admin"
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
