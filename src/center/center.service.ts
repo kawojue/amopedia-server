@@ -132,7 +132,7 @@ export class CenterService {
 
     async inviteMedicalStaff(
         res: Response,
-        { sub }: ExpressUser,
+        { centerId }: ExpressUser,
         {
             practiceNumber, profession,
             zip_code, state, address, city,
@@ -140,15 +140,6 @@ export class CenterService {
         }: InviteMedicalStaffDTO
     ) {
         try {
-            const admin = await this.prisma.centerAdmin.findUnique({
-                where: { id: sub },
-                select: { center: true }
-            })
-
-            if (!admin?.center) {
-                return this.response.sendError(res, StatusCodes.NotFound, 'Error referencing center')
-            }
-
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
                     OR: [
@@ -171,7 +162,7 @@ export class CenterService {
                     country, email, fullname, phone,
                     practiceNumber, status: 'ACTIVE',
                     password, role: profession as Roles,
-                    center: { connect: { id: admin.center.id } }
+                    center: { connect: { id: centerId } }
                 }
             })
 

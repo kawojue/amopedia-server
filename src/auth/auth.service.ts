@@ -167,6 +167,7 @@ export class AuthService {
                         modelName: 'centerAdmin',
                         status: centerAdmin.status,
                         avatar: centerAdmin?.avatar,
+                        centerId: centerAdmin.centerId,
                         fullname: centerAdmin.fullname,
                         route: `/${centerAdmin.center.id}/dashboard`,
                     }
@@ -186,6 +187,7 @@ export class AuthService {
                         email: centerPractitioner.email,
                         status: centerPractitioner.status,
                         avatar: centerPractitioner?.avatar,
+                        centerId: centerPractitioner.centerId,
                         route: `/dashboard/assigned-patients`,
                         fullname: centerPractitioner.fullname,
                     }
@@ -219,6 +221,7 @@ export class AuthService {
                 sub: data.id,
                 role: data.role,
                 status: data.status,
+                centerId: data.centerId,
                 modelName: data.modelName,
             })
 

@@ -12,8 +12,8 @@ export class MiscService {
         this.response = new ResponseService()
     }
 
-    async generateNewAccessToken({ sub, role, status }: JwtPayload) {
-        return await this.jwtService.signAsync({ sub, role, status })
+    async generateNewAccessToken({ sub, role, status, modelName, centerId }: JwtPayload) {
+        return await this.jwtService.signAsync({ sub, role, status, modelName, centerId })
     }
 
     handleServerError(res: Response, err?: any, msg?: string) {

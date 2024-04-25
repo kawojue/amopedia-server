@@ -5,6 +5,7 @@ interface ExpressUser extends Express.User {
     role: Role
     sub: string
     status: Status
+    centerId?: stirng
     modelName?: string
 }
 
@@ -16,6 +17,7 @@ interface JwtPayload {
     role: Role
     sub: string
     status: Status
+    centerId?: string
     modelName?: string
 }
 
@@ -32,6 +34,7 @@ interface ILogin {
     avatar?: IFile
     status?: Status
     email?: string
+    centerId?: string
     fullname: string
     modelName?: string
 }
