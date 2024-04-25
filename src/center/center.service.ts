@@ -181,9 +181,7 @@ export class CenterService {
     async inviteCenterAdmin(
         res: Response,
         { sub }: ExpressUser,
-        {
-            email, fullname, phone
-        }: InviteCenterAdminDTO
+        { email, fullname, phone }: InviteCenterAdminDTO
     ) {
         try {
             const admin = await this.prisma.centerAdmin.findUnique({
@@ -222,6 +220,42 @@ export class CenterService {
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
+        }
+    }
+
+
+    async analytics(res: Response, { centerId }: ExpressUser) {
+        try {
+            const patientCounts = await this.prisma.patient.count({ where: { centerId } })
+
+            const patients = await this.prisma.patient.findMany({
+                where: { centerId },
+                select: { dicoms: true }
+            })
+
+            const dicomCounts = await Promise.all(patients.map(async (patient) => {
+                let count = 0
+                await Promise.all(patient.dicoms.map(async (dicom) => {
+                    if (dicom?.path) {
+                        count++
+                    }
+                }))
+                return count
+            }))
+
+            const totalDicomCounts = dicomCounts.reduce((total, count) => total + count, 0)
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: { patientCounts, totalDicomCounts } })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error calculating analytics")
+        }
+    }
+
+    async chart(res: Response, { centerId }: ExpressUser) {
+        try {
+
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error caching chart")
         }
     }
 }

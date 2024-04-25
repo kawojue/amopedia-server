@@ -60,4 +60,9 @@ export class CenterController {
   ) {
     return await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
+
+  @Get('/analytics')
+  async analytics(@Req() req: IRequest, @Res() res: Response) {
+    return await this.centerService.analytics(res, req.user)
+  }
 }
