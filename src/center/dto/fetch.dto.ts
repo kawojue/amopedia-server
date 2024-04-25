@@ -8,7 +8,7 @@ enum Role {
     centerAdmin = "centerAdmin",
 }
 
-export class FetchMedicalStaffDto extends InfiniteScrollWithSearchDto {
+export class FetchStaffDto extends InfiniteScrollWithSearchDto {
     @ApiProperty({
         enum: Role
     })

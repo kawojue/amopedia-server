@@ -1,11 +1,15 @@
 import { Response } from 'express'
 import { Injectable } from '@nestjs/common'
-import { StatusCodes } from 'enums/statusCodes'
 import { MiscService } from 'lib/misc.service'
+import { FetchStaffDto } from './dto/fetch.dto'
+import { StatusCodes } from 'enums/statusCodes'
+import { SuspendStaffDto } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
-import { FetchMedicalStaffDto } from './dto/fetch.dto'
-import { SuspendMedicalStaffDto } from './dto/auth.dto'
+import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
+import { EncryptionService } from 'lib/encryption.service'
+import { genPassword } from 'helpers/generator'
+import { Roles } from '@prisma/client'
 
 @Injectable()
 export class CenterService {
@@ -13,12 +17,13 @@ export class CenterService {
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
         private readonly response: ResponseService,
+        private readonly encryption: EncryptionService,
     ) { }
 
-    async fetchMedicalStaffs(
+    async fetchStaffs(
         res: Response,
         { sub }: ExpressUser,
-        { limit = 50, page = 1, search = '', role, sortBy }: FetchMedicalStaffDto
+        { limit = 50, page = 1, search = '', role, sortBy }: FetchStaffDto
     ) {
         try {
             limit = Number(limit)
@@ -70,11 +75,11 @@ export class CenterService {
         }
     }
 
-    async suspendMedicalStaff(
+    async suspendStaff(
         res: Response,
         staffId: string,
         { sub }: ExpressUser,
-        { action }: SuspendMedicalStaffDto
+        { action }: SuspendStaffDto
     ) {
         try {
             const admin = await this.prisma.centerAdmin.findUnique({
@@ -119,6 +124,110 @@ export class CenterService {
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 message: `${staffType} has been ${staffStatus}`
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
+
+    async inviteMedicalStaff(
+        res: Response,
+        { sub }: ExpressUser,
+        {
+            practiceNumber, profession,
+            zip_code, state, address, city,
+            country, email, fullname, phone,
+        }: InviteMedicalStaffDTO
+    ) {
+        try {
+            const admin = await this.prisma.centerAdmin.findUnique({
+                where: { id: sub },
+                select: { center: true }
+            })
+
+            if (!admin?.center) {
+                return this.response.sendError(res, StatusCodes.NotFound, 'Error referencing center')
+            }
+
+            const isExists = await this.prisma.practitioner.findFirst({
+                where: {
+                    OR: [
+                        { email: { equals: email, mode: 'insensitive' } },
+                        { practiceNumber: { equals: practiceNumber, mode: 'insensitive' } },
+                    ]
+                }
+            })
+
+            if (isExists) {
+                return this.response.sendError(res, StatusCodes.Conflict, "Email or practice number already exist")
+            }
+
+            const pswd = await genPassword()
+            const password = await this.encryption.hashAsync(pswd)
+
+            const practitioner = await this.prisma.centerPractitioner.create({
+                data: {
+                    zip_code, state, address, city,
+                    country, email, fullname, phone,
+                    practiceNumber, status: 'ACTIVE',
+                    password, role: profession as Roles,
+                    center: { connect: { id: admin.center.id } }
+                }
+            })
+
+            if (practitioner) {
+                // TODO: mail practitioner the generated pswd
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                message: `A new ${profession} has been invited`
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
+
+    async inviteCenterAdmin(
+        res: Response,
+        { sub }: ExpressUser,
+        {
+            email, fullname, phone
+        }: InviteCenterAdminDTO
+    ) {
+        try {
+            const admin = await this.prisma.centerAdmin.findUnique({
+                where: { id: sub, superAdmin: true },
+                select: { center: true }
+            })
+
+            if (!admin) {
+                return this.response.sendError(res, StatusCodes.NotFound, 'Only super admin can invite a new admin')
+            }
+
+            const isExists = await this.prisma.centerAdmin.findUnique({
+                where: { email }
+            })
+
+            if (isExists) {
+                return this.response.sendError(res, StatusCodes.Conflict, 'Existing admin')
+            }
+
+            const pswd = await genPassword()
+            const password = await this.encryption.hashAsync(pswd, 12)
+
+            const centerAdmin = await this.prisma.centerAdmin.create({
+                data: {
+                    email, fullname, phone, password,
+                    center: { connect: { id: admin.center.id } }
+                }
+            })
+
+            if (centerAdmin) {
+                // TODO: mail center admin their pswd
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                message: "A new center admin has been invited"
             })
         } catch (err) {
             this.misc.handleServerError(res, err)

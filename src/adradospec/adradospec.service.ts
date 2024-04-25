@@ -93,7 +93,8 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Only the Super Admin can invite an Admin")
             }
 
-            const password = await this.encryption.hashAsync(await genPassword(), 12)
+            const pswd = await genPassword()
+            const password = await this.encryption.hashAsync(pswd, 12)
 
             const newAdradospec = await this.prisma.adradospec.create({
                 data: {
@@ -106,7 +107,7 @@ export class AdradospecService {
             })
 
             if (newAdradospec) {
-                // Todo: mail new password
+                // Todo: mail new password - pswd
             }
 
             this.response.sendSuccess(res, StatusCodes.Created, {

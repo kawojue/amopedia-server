@@ -61,7 +61,7 @@ model CenterPractitioner {
     email            String    @unique
     phone            String    @unique
     password         String
-    practiceNumber   String
+    practiceNumber   String    @unique
     avatar           File?
     address          String
     city             String
@@ -86,7 +86,7 @@ model Practitioner {
     phone            String    @unique
     password         String
     affiliation      String
-    practiceNumber   String
+    practiceNumber   String    @unique
     address          String
     city             String
     state            String

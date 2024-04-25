@@ -1,4 +1,4 @@
 export enum Profession {
-    doctor = "Doctor",
-    radiologist = "Radiologist"
+    doctor = "doctor",
+    radiologist = "radiologist"
 }

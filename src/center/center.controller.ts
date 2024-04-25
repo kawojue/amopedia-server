@@ -2,12 +2,16 @@ import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/role.decorator'
 import { AuthGuard } from '@nestjs/passport'
+import { FetchStaffDto } from './dto/fetch.dto'
+import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
-import { FetchMedicalStaffDto } from './dto/fetch.dto'
-import { SuspendMedicalStaffDto } from './dto/auth.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
-import { Controller, Get, Param, Patch, Query, Req, Res, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
+} from '@nestjs/common'
+import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 
 @ApiTags('Center')
 @Controller('center')
@@ -16,24 +20,44 @@ import { Controller, Get, Param, Patch, Query, Req, Res, UseGuards } from '@nest
 export class CenterController {
   constructor(private readonly centerService: CenterService) { }
 
-  @Get('/fetch/medical-staffs')
+  @Get('/fetch/staffs')
   @Role(Roles.centerAdmin)
   async fetchMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
-    @Query() query: FetchMedicalStaffDto
+    @Query() query: FetchStaffDto
   ) {
-    return await this.centerService.fetchMedicalStaffs(res, req.user, query)
+    return await this.centerService.fetchStaffs(res, req.user, query)
   }
 
+  @Patch('/manage/suspension/:staffId')
   @Role(Roles.centerAdmin)
-  @Patch('/manage-suspension/:staffId')
   async suspendMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
+    @Query() query: SuspendStaffDto,
     @Param('staffId') staffId: string,
-    @Query() query: SuspendMedicalStaffDto,
   ) {
-    return await this.centerService.suspendMedicalStaff(res, staffId, req.user, query)
+    return await this.centerService.suspendStaff(res, staffId, req.user, query)
+  }
+
+  @Post('/invite/medical-staff')
+  @Role(Roles.centerAdmin)
+  async inviteMedicalStaff(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: InviteMedicalStaffDTO,
+  ) {
+    return await this.centerService.inviteMedicalStaff(res, req.user, body)
+  }
+
+  @Post('/invite/center-admin')
+  @Role(Roles.centerAdmin)
+  async inviteCenterAdmin(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: InviteCenterAdminDTO,
+  ) {
+    return await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 }
