@@ -1,15 +1,16 @@
 import { Response } from 'express'
+import { Roles } from '@prisma/client'
 import { Injectable } from '@nestjs/common'
+import { genPassword } from 'helpers/generator'
 import { MiscService } from 'lib/misc.service'
 import { FetchStaffDto } from './dto/fetch.dto'
 import { StatusCodes } from 'enums/statusCodes'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
-import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 import { EncryptionService } from 'lib/encryption.service'
-import { genPassword } from 'helpers/generator'
-import { Roles } from '@prisma/client'
+import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
+import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 
 @Injectable()
 export class CenterService {
@@ -140,6 +141,10 @@ export class CenterService {
         }: InviteMedicalStaffDTO
     ) {
         try {
+            email = toLowerCase(email)
+            fullname = titleText(fullname)
+            practiceNumber = toUpperCase(practiceNumber)
+
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
                     OR: [
@@ -184,6 +189,9 @@ export class CenterService {
         { email, fullname, phone }: InviteCenterAdminDTO
     ) {
         try {
+            email = toLowerCase(email)
+            fullname = titleText(fullname)
+
             const admin = await this.prisma.centerAdmin.findUnique({
                 where: { id: sub, superAdmin: true },
                 select: { center: true }

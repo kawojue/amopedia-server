@@ -10,8 +10,8 @@ import { Center, Practitioner } from '@prisma/client'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
+import { titleText, toLowerCase } from 'helpers/transformer'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
-import { ChangePasswordDto } from 'src/auth/dto/password.dto'
 
 @Injectable()
 export class AdradospecService {
@@ -22,8 +22,42 @@ export class AdradospecService {
         private readonly encryption: EncryptionService,
     ) { }
 
+    private or(search: string) {
+        const OR = [
+            { country: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { state: { contains: search, mode: 'insensitive' } },
+            { city: { contains: search, mode: 'insensitive' } },
+        ] as ({
+            country: {
+                contains: string
+                mode: "insensitive"
+            }
+        } | {
+            email: {
+                contains: string
+                mode: "insensitive"
+            }
+        } | {
+            state: {
+                contains: string
+                mode: "insensitive"
+            }
+        } | {
+            city: {
+                contains: string
+                mode: "insensitive"
+            }
+        })[]
+
+        return OR
+    }
+
     async signup(res: Response, { email, password, fullname }: SignupDto) {
         try {
+            email = toLowerCase(email)
+            fullname = titleText(fullname)
+
             const admin = await this.prisma.adradospec.findUnique({
                 where: { email }
             })
@@ -49,7 +83,7 @@ export class AdradospecService {
     async login(res: Response, { email, password }: LoginDto) {
         try {
             const adradospec = await this.prisma.adradospec.findUnique({
-                where: { email }
+                where: { email: toLowerCase(email) }
             })
 
             if (!adradospec) {
@@ -83,6 +117,8 @@ export class AdradospecService {
         { email, fullname, role }: InviteDto,
     ) {
         try {
+            email = toLowerCase(email)
+
             const adradospec = await this.prisma.adradospec.findUnique({
                 where: { id: sub }
             })
@@ -96,11 +132,9 @@ export class AdradospecService {
 
             const newAdradospec = await this.prisma.adradospec.create({
                 data: {
-                    role,
-                    email,
-                    password,
-                    fullname,
-                    superAdmin: false
+                    role, password,
+                    email, fullname,
+                    superAdmin: false,
                 }
             })
 
@@ -155,9 +189,7 @@ export class AdradospecService {
                     where: {
                         OR: [
                             { centerName: { contains: search, mode: 'insensitive' } },
-                            { country: { contains: search, mode: 'insensitive' } },
-                            { email: { contains: search, mode: 'insensitive' } },
-                            { city: { contains: search, mode: 'insensitive' } },
+                            ...this.or(search),
                         ]
                     },
                     take: limit,
@@ -172,10 +204,7 @@ export class AdradospecService {
                         status,
                         OR: [
                             { centerName: { contains: search, mode: 'insensitive' } },
-                            { country: { contains: search, mode: 'insensitive' } },
-                            { email: { contains: search, mode: 'insensitive' } },
-                            { state: { contains: search, mode: 'insensitive' } },
-                            { city: { contains: search, mode: 'insensitive' } },
+                            ...this.or(search),
                         ]
                     },
                     take: limit,
@@ -248,9 +277,7 @@ export class AdradospecService {
                         role,
                         OR: [
                             { fullname: { contains: search, mode: 'insensitive' } },
-                            { country: { contains: search, mode: 'insensitive' } },
-                            { email: { contains: search, mode: 'insensitive' } },
-                            { city: { contains: search, mode: 'insensitive' } },
+                            ...this.or(search),
                         ]
                     },
                     take: limit,
@@ -266,10 +293,7 @@ export class AdradospecService {
                         status,
                         OR: [
                             { fullname: { contains: search, mode: 'insensitive' } },
-                            { country: { contains: search, mode: 'insensitive' } },
-                            { email: { contains: search, mode: 'insensitive' } },
-                            { state: { contains: search, mode: 'insensitive' } },
-                            { city: { contains: search, mode: 'insensitive' } },
+                            ...this.or(search),
                         ]
                     },
                     take: limit,

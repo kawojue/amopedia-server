@@ -6,7 +6,6 @@ import {
 import { PasswordDto } from './password.dto'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
-import { titleText } from 'helpers/transformer'
 
 export class OrganizationSignupDto extends PasswordDto {
     @ApiProperty({
@@ -14,7 +13,6 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(100)
-    @Transform(({ value }) => titleText(value))
     fullname: string
 
     @ApiProperty({
@@ -22,7 +20,6 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(100)
-    @Transform(({ value }) => titleText(value))
     organizationName: string
 
     @ApiProperty({
@@ -31,7 +28,6 @@ export class OrganizationSignupDto extends PasswordDto {
     @IsEmail({
         host_blacklist: ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'fastmail.com']
     }, { message: 'Only business email is required' })
-    @Transform(({ value }) => value.toLowerCase().trim())
     email: string
 
     @ApiProperty({
@@ -53,7 +49,6 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
-    @Transform(({ value }) => titleText(value))
     city: string
 
     @ApiProperty({
@@ -61,7 +56,6 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
-    @Transform(({ value }) => titleText(value))
     state: string
 
     @ApiProperty({
@@ -76,7 +70,6 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
-    @Transform(({ value }) => titleText(value))
     country: string
 }
 
@@ -86,14 +79,12 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(100)
-    @Transform(({ value }) => titleText(value))
     fullname: string
 
     @ApiProperty({
         example: 'johndoe@example.com'
     })
     @IsEmail({}, { message: 'Invalid email address' })
-    @Transform(({ value }) => value.toLowerCase().trim())
     email: string
 
     @ApiProperty({
@@ -113,7 +104,6 @@ export class PractitionerSignupDto extends PasswordDto {
         example: 'Lasuth'
     })
     @IsString()
-    @Transform(({ value }) => titleText(value))
     affiliation: string
 
     @ApiProperty({
@@ -135,7 +125,6 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
-    @Transform(({ value }) => titleText(value))
     city: string
 
     @ApiProperty({
@@ -143,7 +132,6 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
-    @Transform(({ value }) => titleText(value))
     state: string
 
     @ApiProperty({
@@ -158,6 +146,5 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
-    @Transform(({ value }) => titleText(value))
     country: string
 }

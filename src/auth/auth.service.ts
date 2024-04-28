@@ -10,6 +10,7 @@ import { EmailDto, LoginDto } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
 import { ChangePasswordDto } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
+import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
 
 @Injectable()
@@ -29,7 +30,10 @@ export class AuthService {
         }: PractitionerSignupDto
     ) {
         try {
-            const role = profession.toLowerCase() as Roles
+            email = toLowerCase(email)
+            fullname = titleText(fullname)
+            practiceNumber = toUpperCase(practiceNumber)
+            const role = toLowerCase(profession) as Roles
 
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
@@ -74,7 +78,7 @@ export class AuthService {
         }: OrganizationSignupDto
     ) {
         try {
-            email = email.trim().toLowerCase()
+            email = toLowerCase(email)
             password = await this.encryption.hashAsync(password)
 
             const isExist = await this.prisma.center.findFirst({
@@ -124,6 +128,8 @@ export class AuthService {
         { email, password }: LoginDto
     ) {
         try {
+            email = toLowerCase(email)
+
             const centerAdmin = await this.prisma.centerAdmin.findUnique({
                 where: { email },
                 include: { center: true }
@@ -240,6 +246,8 @@ export class AuthService {
         { email }: EmailDto
     ) {
         try {
+            email = toLowerCase(email)
+
             const centerAdmin = await this.prisma.centerAdmin.findUnique({
                 where: { email },
                 include: { center: true }

@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { Transform } from 'class-transformer'
 import { IsEmail, IsString, MaxLength } from 'class-validator'
 
 export class EmailDto {
@@ -7,7 +6,6 @@ export class EmailDto {
         example: 'kawojue08@gmail.com'
     })
     @IsEmail({}, { message: "Invalid email address" })
-    @Transform(({ value }) => value.toLowerCase().trim())
     email: string
 }
 
