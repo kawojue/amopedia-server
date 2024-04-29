@@ -24,7 +24,10 @@ export class CenterService {
     async fetchStaffs(
         res: Response,
         { sub }: ExpressUser,
-        { limit = 50, page = 1, search = '', role, sortBy }: FetchStaffDto
+        {
+            limit = 50, page = 1,
+            role, search = '', sortBy
+        }: FetchStaffDto
     ) {
         try {
             limit = Number(limit)
@@ -95,7 +98,7 @@ export class CenterService {
                 where: { id: staffId }
             })
 
-            let modelName: string
+            let modelName = "centerPractitioner"
 
             if (!centerAdmin && !practitioner) {
                 return this.response.sendError(res, StatusCodes.NotFound, "Staff not found")
@@ -111,8 +114,6 @@ export class CenterService {
                 }
 
                 modelName = "centerAdmin"
-            } else {
-                modelName = "centerPractitioner"
             }
 
             await this.prisma[modelName].update({
@@ -234,26 +235,29 @@ export class CenterService {
 
     async analytics(res: Response, { centerId }: ExpressUser) {
         try {
-            const patientCounts = await this.prisma.patient.count({ where: { centerId } })
+            const [patientCounts, patients] = await Promise.all([
+                this.prisma.patient.count({ where: { centerId } }),
+                this.prisma.patient.findMany({
+                    where: { centerId },
+                    select: { dicoms: true }
+                })
+            ])
 
-            const patients = await this.prisma.patient.findMany({
-                where: { centerId },
-                select: { dicoms: true }
-            })
-
-            const dicomCounts = await Promise.all(patients.map(async (patient) => {
-                let count = 0
-                await Promise.all(patient.dicoms.map(async (dicom) => {
+            let totalDicomCounts = 0
+            await Promise.all(patients.map(async patient => {
+                const dicomCounts = await Promise.all(patient.dicoms.map(async dicom => {
                     if (dicom?.path) {
-                        count++
+                        return 1
+                    } else {
+                        return 0
                     }
                 }))
-                return count
+                totalDicomCounts += dicomCounts.reduce((total, count) => total + count, 0)
             }))
 
-            const totalDicomCounts = dicomCounts.reduce((total, count) => total + count, 0)
-
-            this.response.sendSuccess(res, StatusCodes.OK, { data: { patientCounts, totalDicomCounts } })
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { patientCounts, totalDicomCounts }
+            })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error calculating analytics")
         }
@@ -273,7 +277,10 @@ export class CenterService {
                 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
             ]
 
-            const chart: { label: string; count: string }[] = []
+            const chart: {
+                label: string
+                count: string
+            }[] = []
 
             if (q === "weekdays") {
                 labels = ['MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT', 'SUN']
