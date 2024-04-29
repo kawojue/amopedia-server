@@ -2,11 +2,11 @@ import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/role.decorator'
 import { AuthGuard } from '@nestjs/passport'
-import { FetchStaffDto } from './dto/fetch.dto'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import {
   Body,
   Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
@@ -61,8 +61,19 @@ export class CenterController {
     return await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 
+  @Role(Roles.specialist, Roles.centerAdmin)
   @Get('/analytics')
   async analytics(@Req() req: IRequest, @Res() res: Response) {
     return await this.centerService.analytics(res, req.user)
+  }
+
+  @Get('/charts')
+  @Role(Roles.specialist, Roles.centerAdmin)
+  async charts(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Query() query: ChartDTO,
+  ) {
+    return await this.centerService.charts(res, req.user, query)
   }
 }

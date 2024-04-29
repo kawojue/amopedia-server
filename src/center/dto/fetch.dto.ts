@@ -15,3 +15,16 @@ export class FetchStaffDto extends InfiniteScrollWithSearchDto {
     @IsEnum(Role)
     role: Role
 }
+
+enum Chart {
+    montly = "monthly",
+    weekdays = "weekdays",
+}
+
+export class ChartDTO {
+    @ApiProperty({
+        enum: Chart
+    })
+    @IsEnum(Chart)
+    q: Chart
+}
