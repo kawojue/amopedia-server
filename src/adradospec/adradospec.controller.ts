@@ -59,16 +59,16 @@ export class AdradospecController {
     return await this.adradospecService.fetchOrganizations(res, query)
   }
 
-  @Patch('/facilities/:orgId/toggle-status')
+  @Patch('/facilities/:centerId/toggle-status')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Role(Roles.admin)
   async toggleOrgStatus(
     @Res() res: Response,
-    @Param('orgId') orgId: string,
     @Query() query: ToggleStatusDTO,
+    @Param('centerId') centerId: string,
   ) {
-    return await this.adradospecService.toggleOrgStatus(res, orgId, query)
+    return await this.adradospecService.toggleOrgStatus(res, centerId, query)
   }
 
   @ApiBearerAuth()

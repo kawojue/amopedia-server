@@ -21,9 +21,9 @@ model Adradospec {
 }
 
 model Center {
-    id          String               @id @default(auto()) @map("_id") @db.ObjectId
-    centerName  String               @unique
-    email       String               @unique
+    id          String         @id @default(auto()) @map("_id") @db.ObjectId
+    centerName  String         @unique
+    email       String         @unique
     ip          String
     address     String
     city        String
@@ -31,12 +31,12 @@ model Center {
     phone       String
     zip_code    String?
     country     String
-    status      Status               @default(PENDING)
-    createdAt   DateTime             @default(now())
-    updatedAt   DateTime             @updatedAt
+    status      Status         @default(PENDING)
+    createdAt   DateTime       @default(now())
+    updatedAt   DateTime       @updatedAt
     patients    Patient[]
     admins      CenterAdmin[]
-    practioners CenterPractitioner[]
+    practioners Practitioner[]
 }
 
 model CenterAdmin {
@@ -55,70 +55,58 @@ model CenterAdmin {
     updatedAt  DateTime @updatedAt
 }
 
-model CenterPractitioner {
-    id               String    @id @default(auto()) @map("_id") @db.ObjectId
-    fullname         String
-    email            String    @unique
-    phone            String    @unique
-    password         String
-    practiceNumber   String    @unique
-    avatar           File?
-    address          String
-    city             String
-    state            String
-    zip_code         String?
-    country          String
-    role             Roles
-    status           Status    @default(ACTIVE)
-    assignedPatients Patient[]
-    center           Center    @relation(fields: [centerId], references: [id])
-    centerId         String    @unique @db.ObjectId
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
-}
-
 model Practitioner {
-    id               String    @id @default(auto()) @map("_id") @db.ObjectId
-    status           Status    @default(PENDING)
-    fullname         String
-    avatar           File?
-    email            String    @unique
-    phone            String    @unique
-    password         String
-    affiliation      String
-    practiceNumber   String    @unique
-    address          String
-    city             String
-    state            String
-    zip_code         String?
-    country          String
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
-    role             Roles
-    assignedPatients Patient[]
+    id             String         @id @default(auto()) @map("_id") @db.ObjectId
+    status         Status         @default(PENDING)
+    fullname       String
+    avatar         File?
+    type           PracType
+    email          String         @unique
+    phone          String         @unique
+    password       String
+    affiliation    String?
+    practiceNumber String         @unique
+    address        String
+    city           String
+    state          String
+    zip_code       String?
+    country        String
+    createdAt      DateTime       @default(now())
+    updatedAt      DateTime       @updatedAt
+    role           Roles
+    patientStudies PatientStudy[]
+    center         Center?        @relation(fields: [centerId], references: [id])
+    centerId       String?        @unique @db.ObjectId
 }
 
 model Patient {
-    id                   String              @id @default(auto()) @map("_id") @db.ObjectId
-    mrn                  String              @unique
-    fullname             String
-    nin                  String
-    phone                String
-    dob                  DateTime
-    gender               Gender?
-    maritalStatus        MaritalStatus?
-    address              String
-    status               PatientStatus       @default(Unassigned)
-    zip_code             String?
-    dicoms               File[]
-    center               Center              @relation(fields: [centerId], references: [id])
-    centerId             String              @unique @db.ObjectId
-    practitioner         Practitioner?       @relation(fields: [practitionerId], references: [id])
-    practitionerId       String?             @unique @db.ObjectId
-    centerPractitioner   CenterPractitioner? @relation(fields: [centerPractitionerId], references: [id])
-    centerPractitionerId String?             @unique @db.ObjectId
-    createdAt            DateTime            @default(now())
-    updatedAt            DateTime            @updatedAt
+    id            String         @id @default(auto()) @map("_id") @db.ObjectId
+    mrn           String         @unique
+    fullname      String
+    nin           String
+    phone         String
+    dob           DateTime
+    gender        Gender?
+    maritalStatus MaritalStatus?
+    address       String
+    status        PatientStatus  @default(Unassigned)
+    zip_code      String?
+    dicoms        File[]
+    center        Center         @relation(fields: [centerId], references: [id])
+    centerId      String         @unique @db.ObjectId
+    caseStudies   PatientStudy[]
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+}
+
+model PatientStudy {
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    bodyPart String
+
+    practitioner   Practitioner @relation(fields: [practitionerId], references: [id])
+    practitionerId String       @db.ObjectId
+    patient        Patient      @relation(fields: [patientId], references: [id])
+    patientId      String       @unique @db.ObjectId
 }
 
 enum Status {
@@ -154,6 +142,11 @@ enum Roles {
     specialist
     radiologist
     centerAdmin
+}
+
+enum PracType {
+    center
+    system
 }
 
 type File {

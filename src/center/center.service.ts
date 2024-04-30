@@ -3,11 +3,11 @@ import { Roles } from '@prisma/client'
 import { Injectable } from '@nestjs/common'
 import { genPassword } from 'helpers/generator'
 import { MiscService } from 'lib/misc.service'
-import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { StatusCodes } from 'enums/statusCodes'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
+import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
@@ -82,8 +82,8 @@ export class CenterService {
     async suspendStaff(
         res: Response,
         staffId: string,
-        { sub }: ExpressUser,
-        { action }: SuspendStaffDto
+        { sub, centerId }: ExpressUser,
+        { action }: SuspendStaffDto,
     ) {
         try {
             const admin = await this.prisma.centerAdmin.findUnique({
@@ -94,11 +94,11 @@ export class CenterService {
                 where: { id: staffId }
             })
 
-            const practitioner = await this.prisma.centerPractitioner.findUnique({
-                where: { id: staffId }
+            const practitioner = await this.prisma.practitioner.findUnique({
+                where: { id: staffId, centerId }
             })
 
-            let modelName = "centerPractitioner"
+            let modelName = "practitioner"
 
             if (!centerAdmin && !practitioner) {
                 return this.response.sendError(res, StatusCodes.NotFound, "Staff not found")
@@ -117,7 +117,7 @@ export class CenterService {
             }
 
             await this.prisma[modelName].update({
-                where: { id: staffId },
+                where: { id: staffId, centerId },
                 data: { status: action }
             })
 
@@ -162,13 +162,13 @@ export class CenterService {
             const pswd = await genPassword()
             const password = await this.encryption.hashAsync(pswd)
 
-            const practitioner = await this.prisma.centerPractitioner.create({
+            const practitioner = await this.prisma.practitioner.create({
                 data: {
-                    zip_code, state, address, city,
-                    country, email, fullname, phone,
-                    practiceNumber, status: 'ACTIVE',
-                    password, role: profession as Roles,
-                    center: { connect: { id: centerId } }
+                    center: { connect: { id: centerId } },
+                    city, country, email, fullname, phone,
+                    type: 'center', zip_code, state, address,
+                    practiceNumber, status: 'ACTIVE', password,
+                    role: profession as Roles,
                 }
             })
 
@@ -255,8 +255,12 @@ export class CenterService {
                 totalDicomCounts += dicomCounts.reduce((total, count) => total + count, 0)
             }))
 
+            const totalStaffs = await this.prisma.practitioner.count({
+                where: { centerId, type: 'center' }
+            }) + await this.prisma.centerAdmin.count({ where: { centerId } })
+
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { patientCounts, totalDicomCounts }
+                data: { patientCounts, totalDicomCounts, totalStaffs }
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error calculating analytics")

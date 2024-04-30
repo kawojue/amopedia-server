@@ -225,12 +225,12 @@ export class AdradospecService {
 
     async toggleOrgStatus(
         res: Response,
-        orgId: string,
+        centerId: string,
         { status }: ToggleStatusDTO
     ) {
         try {
             const center = await this.prisma.center.findUnique({
-                where: { id: orgId }
+                where: { id: centerId }
             })
 
             if (!center) {
@@ -238,14 +238,14 @@ export class AdradospecService {
             }
 
             await this.prisma.center.update({
-                where: { id: orgId },
+                where: { id: centerId },
                 data: { status }
             })
 
             // TODO: mail about status change
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                message: `The center is now ${center.status}`
+                message: `The center is now ${status.toLowerCase()}`
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error toggling facility")
@@ -268,41 +268,22 @@ export class AdradospecService {
 
             const offset = (page - 1) * limit
 
-            let practitioners: Practitioner[]
-            let total: number
+            const practitioners = await this.prisma.practitioner.findMany({
+                where: {
+                    role,
+                    ...status ? { status } : {},
+                    type: 'system',
+                    OR: [
+                        { fullname: { contains: search, mode: 'insensitive' } },
+                        ...this.or(search),
+                    ]
+                },
+                take: limit,
+                skip: offset,
+                orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
+            })
 
-            if (!status) {
-                practitioners = await this.prisma.practitioner.findMany({
-                    where: {
-                        role,
-                        OR: [
-                            { fullname: { contains: search, mode: 'insensitive' } },
-                            ...this.or(search),
-                        ]
-                    },
-                    take: limit,
-                    skip: offset,
-                    orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
-                })
-
-                total = await this.prisma.center.count()
-            } else {
-                practitioners = await this.prisma.practitioner.findMany({
-                    where: {
-                        role,
-                        status,
-                        OR: [
-                            { fullname: { contains: search, mode: 'insensitive' } },
-                            ...this.or(search),
-                        ]
-                    },
-                    take: limit,
-                    skip: offset,
-                    orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
-                })
-
-                total = await this.prisma.center.count({ where: { status } })
-            }
+            const total = await this.prisma.center.count({ where: { ...status ? { status } : {} } })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: { practitioners, total }
@@ -315,17 +296,15 @@ export class AdradospecService {
     async fetchPractitioner(res: Response, practitionerId: string) {
         try {
             const practitioner = await this.prisma.practitioner.findUnique({
-                where: { id: practitionerId }
+                where: { id: practitionerId, type: 'system' }
             })
 
             if (!practitioner) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Practitioner not found')
             }
 
-            const totalAssignedPatients = await this.prisma.patient.count({ where: { practitionerId } })
-
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { practitioner, totalAssignedPatients }
+                data: practitioner
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error getting practitioner")
