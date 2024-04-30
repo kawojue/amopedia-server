@@ -89,8 +89,8 @@ model Patient {
     gender        Gender?
     maritalStatus MaritalStatus?
     address       String
-    status        PatientStatus  @default(Unassigned)
     zip_code      String?
+    status        PatientStatus  @default(Unassigned)
     dicoms        File[]
     center        Center         @relation(fields: [centerId], references: [id])
     centerId      String         @unique @db.ObjectId
@@ -100,13 +100,26 @@ model Patient {
 }
 
 model PatientStudy {
-    id       String @id @default(auto()) @map("_id") @db.ObjectId
-    bodyPart String
-
+    id             String       @id @default(auto()) @map("_id") @db.ObjectId
+    studyId        String       @unique
+    bodyPart       String
+    priority       String
+    cpt_code       String
+    modality       String
+    procedure      String
+    description    String?
+    clinicalInfo   String?
+    site           String
+    accessionNo    String
+    paperwork      File[]
+    priorStudy     String?
+    dicoms         File[]
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime     @updatedAt
     practitioner   Practitioner @relation(fields: [practitionerId], references: [id])
     practitionerId String       @db.ObjectId
     patient        Patient      @relation(fields: [patientId], references: [id])
-    patientId      String       @unique @db.ObjectId
+    patientId      String       @db.ObjectId
 }
 
 enum Status {

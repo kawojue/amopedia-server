@@ -171,8 +171,8 @@ export class AuthService {
                 email: user.email,
                 status: user.status,
                 avatar: user?.avatar,
-                centerId: user?.centerId,
                 fullname: user.fullname,
+                centerId: user?.centerId,
                 modelName: user.role === 'centerAdmin' ? 'centerAdmin' : 'practitioner',
                 route: user.role === 'centerAdmin' ? `/${user.center.id}/dashboard` : `/dashboard/reports`,
             }
