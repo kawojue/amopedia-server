@@ -254,19 +254,22 @@ export class AuthService {
     async changePassword(
         res: Response,
         { sub, modelName }: ExpressUser,
-        { password, confirmPassword }: ChangePasswordDto
+        { currentPassword, newPassword }: ChangePasswordDto
     ) {
         try {
-            if (password !== confirmPassword) {
-                return this.response.sendError(res, StatusCodes.BadRequest, "Passwords do not match")
-            }
+            const user = await this.prisma[modelName].findUnique({
+                where: { id: sub }
+            })
 
-            const hashedPassword = await this.encryption.hashAsync(password)
+            const isPasswordCorrect = await this.encryption.compareAsync(currentPassword, user.password)
+            if (!isPasswordCorrect) {
+                return this.response.sendError(res, StatusCodes.Unauthorized, 'Incorrect password')
+            }
 
             await this.prisma[modelName].update({
                 where: { id: sub },
                 data: {
-                    password: hashedPassword
+                    password: await this.encryption.hashAsync(newPassword)
                 }
             })
 

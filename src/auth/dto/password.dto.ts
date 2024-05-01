@@ -11,10 +11,18 @@ export class PasswordDto {
     password: string
 }
 
-export class ChangePasswordDto extends PasswordDto {
+export class ChangePasswordDto {
     @ApiProperty({
         example: 'Mypswd123'
     })
     @IsString()
-    confirmPassword: string
+    currentPassword: string
+
+    @ApiProperty({
+        example: 'Mypswd123'
+    })
+    @IsString()
+    @MinLength(6)
+    @MaxLength(36, { message: "Password is too long" })
+    newPassword: string
 }
