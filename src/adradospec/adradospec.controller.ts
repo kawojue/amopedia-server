@@ -4,6 +4,7 @@ import { Role } from 'src/role.decorator'
 import { AuthGuard } from '@nestjs/passport'
 import { LoginDto } from 'src/auth/dto/login.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
+import { ChartDTO } from 'src/center/dto/fetch.dto'
 import { InviteDto, SignupDto } from './dto/auth.dto'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { AdradospecService } from './adradospec.service'
@@ -103,5 +104,21 @@ export class AdradospecController {
     @Param('practitionerId') practitionerId: string,
   ) {
     return await this.adradospecService.togglePractitionerStatus(res, practitionerId, query)
+  }
+
+  @Get('/analytics')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Role(Roles.specialist, Roles.centerAdmin)
+  async analytics(@Res() res: Response) {
+    return await this.adradospecService.analytics(res)
+  }
+
+  @Get('/charts')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Role(Roles.specialist, Roles.centerAdmin)
+  async charts(@Res() res: Response, @Query() q: ChartDTO) {
+    return await this.adradospecService.charts(res, q)
   }
 }

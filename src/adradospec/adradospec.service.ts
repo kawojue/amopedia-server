@@ -1,4 +1,5 @@
 import { Response } from 'express'
+import { Center } from '@prisma/client'
 import { Injectable } from '@nestjs/common'
 import { MiscService } from 'lib/misc.service'
 import { genPassword } from 'helpers/generator'
@@ -6,12 +7,12 @@ import { StatusCodes } from 'enums/statusCodes'
 import { LoginDto } from 'src/auth/dto/login.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { InviteDto, SignupDto } from './dto/auth.dto'
-import { Center, Practitioner } from '@prisma/client'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { titleText, toLowerCase } from 'helpers/transformer'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
+import { ChartDTO } from 'src/center/dto/fetch.dto'
 
 @Injectable()
 export class AdradospecService {
@@ -337,6 +338,107 @@ export class AdradospecService {
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error toggling status")
+        }
+    }
+
+    async analytics(res: Response) {
+        try {
+            const [patientCounts, facilityCounts, caseStudyCounts, patients] = await Promise.all([
+                this.prisma.patient.count(),
+                this.prisma.center.count(),
+                this.prisma.patientStudy.count(),
+                this.prisma.patient.findMany({
+                    select: { dicoms: true }
+                }),
+            ])
+
+            let totalDicomCounts = 0
+            await Promise.all(patients.map(async patient => {
+                const dicomCounts = await Promise.all(patient.dicoms.map(async dicom => {
+                    if (dicom?.path) {
+                        return 1
+                    } else {
+                        return 0
+                    }
+                }))
+                totalDicomCounts += dicomCounts.reduce((total, count) => total + count, 0)
+            }))
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { patientCounts, totalDicomCounts, facilityCounts, caseStudyCounts }
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error calculating analytics")
+        }
+    }
+
+    async charts(
+        res: Response,
+        { q }: ChartDTO,
+    ) {
+        try {
+            let total = 0
+
+            const currentYear = new Date().getFullYear()
+            let labels = [
+                'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+            ]
+
+            const chart: {
+                label: string
+                count: string
+            }[] = []
+
+            if (q === "weekdays") {
+                labels = ['MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT', 'SUN']
+
+                for (let i = 0; i < 7; i++) {
+                    const count = await this.prisma.patient.count({
+                        where: {
+                            AND: [
+                                { createdAt: { gte: new Date(currentYear, 0, i + 1) } },
+                                { createdAt: { lt: new Date(currentYear + 1, 0, i + 1) } }
+                            ]
+                        }
+                    })
+                    chart.push({ label: labels[i], count: count.toString() })
+                    total += count
+                }
+            } else if (q === "monthly") {
+                for (let i = 0; i < labels.length; i++) {
+                    const startDate = new Date(currentYear, i, 1)
+                    let endMonth = i + 1
+                    let endYear = currentYear
+
+                    if (endMonth === 12) {
+                        endMonth = 1
+                        endYear = currentYear + 1
+                    } else {
+                        endMonth++
+                    }
+
+                    const endDate = new Date(endYear, endMonth - 1, 1)
+
+                    const count = await this.prisma.patient.count({
+                        where: {
+                            AND: [
+                                { createdAt: { gte: startDate } },
+                                { createdAt: { lt: endDate } }
+                            ]
+                        }
+                    })
+
+                    chart.push({ label: labels[i], count: count.toString() })
+                    total += count
+                }
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { chart, total }
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error caching chart")
         }
     }
 }

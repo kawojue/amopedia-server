@@ -61,14 +61,14 @@ export class CenterController {
     return await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 
-  @Role(Roles.specialist, Roles.centerAdmin)
+  @Role(Roles.centerAdmin)
   @Get('/analytics')
   async analytics(@Req() req: IRequest, @Res() res: Response) {
     return await this.centerService.analytics(res, req.user)
   }
 
   @Get('/charts')
-  @Role(Roles.specialist, Roles.centerAdmin)
+  @Role(Roles.centerAdmin)
   async charts(
     @Req() req: IRequest,
     @Res() res: Response,
