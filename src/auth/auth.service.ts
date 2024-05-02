@@ -174,7 +174,7 @@ export class AuthService {
                 fullname: user.fullname,
                 centerId: user?.centerId,
                 modelName: user.role === 'centerAdmin' ? 'centerAdmin' : 'practitioner',
-                route: user.role === 'centerAdmin' ? `/${user.center.id}/dashboard` : `/dashboard/reports`,
+                route: user.role === 'centerAdmin' ? `/organization/dashboard` : `/dashboard/reports`,
             }
 
             const access_token = await this.misc.generateNewAccessToken({
