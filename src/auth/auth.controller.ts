@@ -1,10 +1,10 @@
 import { Request, Response } from 'express'
+import { AuthGuard } from '@nestjs/passport'
+import { AuthService } from './auth.service'
 import {
   Body, UploadedFile, Post, Put, Req, Patch,
   Controller, UseGuards, Res, UseInterceptors,
 } from '@nestjs/common'
-import { AuthGuard } from '@nestjs/passport'
-import { AuthService } from './auth.service'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { EmailDto, LoginDto } from './dto/login.dto'
 import { ChangePasswordDto } from './dto/password.dto'
