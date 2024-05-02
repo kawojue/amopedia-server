@@ -1,4 +1,4 @@
-import { StatusCodes } from 'enums/StatusCodes'
+import { StatusCodes } from 'enums/statusCodes'
 
 export const validateFile = (
     file: Express.Multer.File,

@@ -6,13 +6,13 @@ import { genPassword } from 'helpers/generator'
 import { StatusCodes } from 'enums/statusCodes'
 import { LoginDto } from 'src/auth/dto/login.dto'
 import { PrismaService } from 'lib/prisma.service'
+import { ChartDTO } from 'src/center/dto/fetch.dto'
 import { InviteDto, SignupDto } from './dto/auth.dto'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { titleText, toLowerCase } from 'helpers/transformer'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
-import { ChartDTO } from 'src/center/dto/fetch.dto'
 
 @Injectable()
 export class AdradospecService {
