@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { AuthService } from './auth.service'
+import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
 import { AuthController } from './auth.controller'
 import { JwtStrategy } from 'src/jwt/jwt.strategy'
@@ -12,6 +13,7 @@ import { EncryptionService } from 'lib/encryption.service'
   providers: [
     AuthService,
     JwtStrategy,
+    AwsService,
     MiscService,
     PrismaService,
     ResponseService,

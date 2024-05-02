@@ -1,8 +1,9 @@
 import { Roles } from '@prisma/client'
 import { Request, Response } from 'express'
 import { Injectable } from '@nestjs/common'
+import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
-import { genPassword } from 'helpers/generator'
+import { genFilename, genPassword } from 'helpers/generator'
 import { StatusCodes } from 'enums/statusCodes'
 import { PrismaService } from 'lib/prisma.service'
 import { getIpAddress } from 'helpers/getIPAddress'
@@ -12,10 +13,12 @@ import { ChangePasswordDto } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
+import { validateFile } from 'utils/file'
 
 @Injectable()
 export class AuthService {
     constructor(
+        private readonly aws: AwsService,
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
         private readonly response: ResponseService,
@@ -174,7 +177,7 @@ export class AuthService {
                 fullname: user.fullname,
                 centerId: user?.centerId,
                 modelName: user.role === 'centerAdmin' ? 'centerAdmin' : 'practitioner',
-                route: user.role === 'centerAdmin' ? `/organization/dashboard` : `/dashboard/reports`,
+                route: user.role === 'centerAdmin' ? `/organization/dashboard` : `/practitioner/dashboard`,
             }
 
             const access_token = await this.misc.generateNewAccessToken({
@@ -202,12 +205,20 @@ export class AuthService {
         try {
             email = toLowerCase(email)
 
+            const select = {
+                id: true,
+                role: true,
+                email: true,
+                status: true,
+                center: { select: { status: true } }
+            }
+
             const user = await this.prisma.centerAdmin.findUnique({
                 where: { email },
-                include: { center: true }
+                select
             }) || await this.prisma.practitioner.findUnique({
                 where: { email },
-                include: { center: true }
+                select
             })
 
             if (!user) {
@@ -278,6 +289,60 @@ export class AuthService {
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
+        }
+    }
+
+    async updateAvatar(
+        res: Response,
+        file: Express.Multer.File,
+        { sub, modelName }: ExpressUser
+    ) {
+        try {
+            const user = await this.prisma[modelName].findUnique({
+                where: { id: sub }
+            })
+
+            if (!user) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Account not found")
+            }
+
+            if (!file) {
+                return this.response.sendError(res, StatusCodes.BadRequest, "No image was selected")
+            }
+
+            const re = validateFile(file, 5 << 20, 'png', 'jpg')
+
+            if (re?.status) {
+                return this.response.sendError(res, re.status, re.message)
+            }
+
+            const path = `profile-photos/${genFilename(re.file.originalname)}`
+            try {
+                await this.aws.uploadS3(re.file, path)
+
+                const avatar = user.avatar
+                if (avatar?.path) {
+                    await this.aws.deleteS3(avatar.path)
+                }
+            } catch (err) {
+                throw err
+            }
+
+            const url = this.aws.getS3(path)
+
+            await this.prisma[modelName].update({
+                where: { id: user.id },
+                data: {
+                    avatar: {
+                        path, url,
+                        type: re.file.mimetype,
+                    }
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: { url } })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error uploading profile photo")
         }
     }
 }

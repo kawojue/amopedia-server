@@ -17,7 +17,7 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
     methods: 'GET,PATCH,POST,PUT,DELETE',
   })
-  app.use(express.json({ limit: 500 << 20 }))
+  app.use(express.json({ limit: 100 << 20 }))
   app.useGlobalPipes(new ValidationPipe())
 
   const swaggerOptions = new DocumentBuilder()

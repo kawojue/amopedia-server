@@ -1,12 +1,16 @@
 import { Request, Response } from 'express'
+import {
+  Body, UploadedFile, Post, Put, Req, Patch,
+  Controller, UseGuards, Res, UseInterceptors,
+} from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import { AuthService } from './auth.service'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { EmailDto, LoginDto } from './dto/login.dto'
 import { ChangePasswordDto } from './dto/password.dto'
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
-import { Body, Controller, Patch, Post, Req, Res, UseGuards } from '@nestjs/common'
 
 @ApiTags("Auth")
 @Controller('auth')
@@ -55,5 +59,18 @@ export class AuthController {
     @Body() body: ChangePasswordDto
   ) {
     return await this.authService.changePassword(res, req.user, body)
+  }
+
+  @ApiOperation({ summary: 'The formdata key should be profile_photo' })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Put('upload/profile-photo')
+  @UseInterceptors(FileInterceptor('profile_photo'))
+  async updateAvatar(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return await this.authService.updateAvatar(res, file, req.user)
   }
 }
