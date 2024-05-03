@@ -343,17 +343,20 @@ export class AdradospecService {
 
     async analytics(res: Response) {
         try {
-            const [patientCounts, facilityCounts, caseStudyCounts, patients] = await Promise.all([
+            const [
+                patientCounts, facilityCounts,
+                caseStudyCounts, caseStudies,
+            ] = await this.prisma.$transaction([
                 this.prisma.patient.count(),
                 this.prisma.center.count(),
                 this.prisma.patientStudy.count(),
-                this.prisma.patient.findMany({
+                this.prisma.patientStudy.findMany({
                     select: { dicoms: true }
                 }),
             ])
 
             let totalDicomCounts = 0
-            await Promise.all(patients.map(async patient => {
+            await Promise.all(caseStudies.map(async patient => {
                 const dicomCounts = await Promise.all(patient.dicoms.map(async dicom => {
                     if (dicom?.path) {
                         return 1

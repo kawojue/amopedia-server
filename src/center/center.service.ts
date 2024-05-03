@@ -235,29 +235,41 @@ export class CenterService {
 
     async analytics(res: Response, { centerId }: ExpressUser) {
         try {
-            const [patientCounts, patients] = await Promise.all([
+            const [
+                patientCounts, patients,
+                pracCounts, adminCounts
+            ] = await this.prisma.$transaction([
                 this.prisma.patient.count({ where: { centerId } }),
                 this.prisma.patient.findMany({
                     where: { centerId },
-                    select: { dicoms: true }
-                })
+                    select: {
+                        caseStudies: {
+                            select: { dicoms: true }
+                        }
+                    }
+                }),
+                this.prisma.practitioner.count({
+                    where: { centerId, type: 'center' }
+                }),
+                this.prisma.centerAdmin.count({ where: { centerId } })
             ])
 
             let totalDicomCounts = 0
             await Promise.all(patients.map(async patient => {
-                const dicomCounts = await Promise.all(patient.dicoms.map(async dicom => {
-                    if (dicom?.path) {
-                        return 1
-                    } else {
-                        return 0
-                    }
+                const caseStudies = patient.caseStudies
+                await Promise.all(caseStudies.map(async caseStudy => {
+                    const dicomCounts = await Promise.all(caseStudy.dicoms.map(async dicom => {
+                        if (dicom?.path) {
+                            return 1
+                        } else {
+                            return 0
+                        }
+                    }))
+                    totalDicomCounts += dicomCounts.reduce((total, count) => total + count, 0)
                 }))
-                totalDicomCounts += dicomCounts.reduce((total, count) => total + count, 0)
             }))
 
-            const totalStaffs = await this.prisma.practitioner.count({
-                where: { centerId, type: 'center' }
-            }) + await this.prisma.centerAdmin.count({ where: { centerId } })
+            const totalStaffs = pracCounts + adminCounts
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: { patientCounts, totalDicomCounts, totalStaffs }
