@@ -232,7 +232,6 @@ export class CenterService {
         }
     }
 
-
     async analytics(res: Response, { centerId }: ExpressUser) {
         try {
             const [
