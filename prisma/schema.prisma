@@ -91,7 +91,6 @@ model Patient {
     address       String
     zip_code      String?
     status        PatientStatus  @default(Unassigned)
-    dicoms        File[]
     center        Center         @relation(fields: [centerId], references: [id])
     centerId      String         @unique @db.ObjectId
     caseStudies   PatientStudy[]

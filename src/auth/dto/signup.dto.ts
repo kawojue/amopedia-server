@@ -1,7 +1,6 @@
-import { Profession } from 'enums/base'
 import {
-    Matches, IsOptional, IsPhoneNumber,
-    IsEmail, MaxLength, IsEnum, IsString,
+    MaxLength, IsString, IsOptional,
+    Matches, IsEmail, IsPhoneNumber,
 } from 'class-validator'
 import { PasswordDto } from './password.dto'
 import { Transform } from 'class-transformer'
@@ -93,12 +92,6 @@ export class PractitionerSignupDto extends PasswordDto {
     @MaxLength(14)
     @IsPhoneNumber()
     phone: string
-
-    @ApiProperty({
-        enum: Profession
-    })
-    @IsEnum(Profession)
-    profession: Profession
 
     @ApiProperty({
         example: 'Lasuth'

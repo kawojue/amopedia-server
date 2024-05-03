@@ -1,9 +1,8 @@
-import { Roles } from '@prisma/client'
+import { validateFile } from 'utils/file'
 import { Request, Response } from 'express'
 import { Injectable } from '@nestjs/common'
 import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
-import { genFilename, genPassword } from 'helpers/generator'
 import { StatusCodes } from 'enums/statusCodes'
 import { PrismaService } from 'lib/prisma.service'
 import { getIpAddress } from 'helpers/getIPAddress'
@@ -11,9 +10,9 @@ import { EmailDto, LoginDto } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
 import { ChangePasswordDto } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
+import { genFilename, genPassword } from 'helpers/generator'
 import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
-import { validateFile } from 'utils/file'
 
 @Injectable()
 export class AuthService {
@@ -28,15 +27,14 @@ export class AuthService {
     async practitionerSignup(
         res: Response,
         {
-            fullname, address, affiliation, email, country, state,
-            city, password, practiceNumber, profession, phone, zip_code,
+            fullname, password, address, zip_code, city, email,
+            country, state, phone, practiceNumber, affiliation,
         }: PractitionerSignupDto
     ) {
         try {
             email = toLowerCase(email)
             fullname = titleText(fullname)
             practiceNumber = toUpperCase(practiceNumber)
-            const role = toLowerCase(profession) as Roles
 
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
@@ -55,10 +53,9 @@ export class AuthService {
 
             await this.prisma.practitioner.create({
                 data: {
-                    email, fullname, role, password,
-                    practiceNumber, status: 'PENDING',
-                    type: 'system', address, affiliation,
-                    phone, city, state, country, zip_code,
+                    email, fullname, address, affiliation, zip_code,
+                    phone, city, state, country, password, practiceNumber,
+                    role: 'radiologist', type: 'system', status: 'PENDING',
                 }
             })
 
