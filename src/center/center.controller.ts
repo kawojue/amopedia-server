@@ -2,14 +2,14 @@ import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/role.decorator'
 import { AuthGuard } from '@nestjs/passport'
+import { AddPatientDTO } from './dto/patient'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import {
-  Body,
-  Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
+  Body, Controller, Get, Param, Patch, Post, Put, Query, Req, Res, UseGuards
 } from '@nestjs/common'
 import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 
@@ -75,5 +75,35 @@ export class CenterController {
     @Query() query: ChartDTO,
   ) {
     return await this.centerService.charts(res, req.user, query)
+  }
+
+  @Post('/patient')
+  async addPatient(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: AddPatientDTO
+  ) {
+    await this.centerService.addPatient(res, req.user, body)
+  }
+
+  @Put('/patient/:mrn/edit')
+  @Role(Roles.centerAdmin, Roles.specialist)
+  async editPatient(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+    @Body() body: AddPatientDTO,
+  ) {
+    await this.centerService.editPatient(res, mrn, req.user, body)
+  }
+
+  @Get('/patient/:mrn/fetch')
+  @Role(Roles.centerAdmin, Roles.specialist)
+  async getPatient(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+  ) {
+    await this.centerService.getPatient(res, mrn, req.user)
   }
 }

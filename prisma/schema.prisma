@@ -84,7 +84,8 @@ model Patient {
     mrn           String         @unique
     fullname      String
     nin           String
-    phone         String
+    phone         String         @unique
+    email         String         @unique
     dob           DateTime
     gender        Gender?
     maritalStatus MaritalStatus?

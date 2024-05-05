@@ -8,3 +8,15 @@ export const titleText = (text: string) => {
 export const toLowerCase = (text: string) => text.toLowerCase().trim()
 
 export const toUpperCase = (text: string) => text.toUpperCase().trim()
+
+export const transformMRN = (patientCount: number) => {
+    const maxMRNLength = 5
+    const maxPatientCount = Math.pow(10, maxMRNLength) - 1
+
+    if (patientCount > maxPatientCount) {
+        throw new Error("Maximum patient count exceeded")
+    }
+
+    const paddedMRN = String(patientCount).padStart(maxMRNLength, "0")
+    return paddedMRN
+}

@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Injectable } from '@nestjs/common'
+import { AddPatientDTO } from './dto/patient'
 import { genPassword } from 'helpers/generator'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
@@ -9,8 +10,8 @@ import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { EncryptionService } from 'lib/encryption.service'
-import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
+import { titleText, toLowerCase, toUpperCase, transformMRN } from 'helpers/transformer'
 
 @Injectable()
 export class CenterService {
@@ -348,6 +349,122 @@ export class CenterService {
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error caching chart")
+        }
+    }
+
+    async addPatient(
+        res: Response,
+        { centerId }: ExpressUser,
+        {
+            address, gender, nin,
+            marital_status, fullname,
+            zip_code, dob, phone, email,
+        }: AddPatientDTO,
+    ) {
+        try {
+            email = toLowerCase(email)
+            fullname = titleText(email)
+
+            const patient = await this.prisma.patient.findUnique({
+                where: {
+                    centerId,
+                    OR: [
+                        { email: { equals: email, mode: 'insensitive' } },
+                        { phone: { equals: phone, mode: 'insensitive' } },
+                    ]
+                }
+            })
+
+            if (patient) {
+                return this.response.sendError(res, StatusCodes.Conflict, `Patient with MRN: ${patient.mrn} already exist`)
+            }
+
+            const lastPatient = await this.prisma.patient.findFirst({
+                orderBy: { createdAt: 'desc' },
+                select: { mrn: true }
+            })
+
+            const mrn = transformMRN(Number(lastPatient.mrn) + 1)
+
+            const newPatient = await this.prisma.patient.create({
+                data: {
+                    address, gender, nin, mrn,
+                    maritalStatus: marital_status,
+                    fullname, zip_code, dob, phone, email,
+                    center: { connect: { id: centerId } },
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: newPatient,
+                message: "New patient has been added to the record"
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error saving a new patient")
+        }
+    }
+
+    async editPatient(
+        res: Response,
+        mrn: string,
+        { centerId }: ExpressUser,
+        {
+            address, gender, nin,
+            marital_status, fullname,
+            zip_code, dob, phone, email,
+        }: AddPatientDTO,
+    ) {
+        try {
+            email = toLowerCase(email)
+            fullname = titleText(email)
+
+            const patient = await this.prisma.patient.findUnique({
+                where: { mrn, centerId }
+            })
+
+            if (!patient) {
+                return this.response.sendError(res, StatusCodes.NotFound, `Patient does not exist`)
+            }
+
+            if (patient.status === "Archived") {
+                return this.response.sendError(res, StatusCodes.Unauthorized, "Unarchive before editing the patient")
+            }
+
+            const updatedPatient = await this.prisma.patient.update({
+                where: { mrn, centerId },
+                data: {
+                    zip_code, dob, phone, email,
+                    maritalStatus: marital_status,
+                    address, gender, nin, fullname,
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: updatedPatient,
+                message: "Message is has been updated"
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error updating patient record")
+        }
+    }
+
+    async getPatient(
+        res: Response,
+        mrn: string,
+        { centerId }: ExpressUser,
+    ) {
+        try {
+            const patient = await this.prisma.patient.findUnique({
+                where: { mrn, centerId }
+            })
+
+            if (!patient) {
+                return this.response.sendError(res, StatusCodes.NotFound, `Patient does not exist`)
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: patient })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Something went wrong while getting a patient record")
         }
     }
 }
