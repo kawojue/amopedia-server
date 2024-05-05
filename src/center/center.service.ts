@@ -384,7 +384,7 @@ export class CenterService {
                 select: { mrn: true }
             })
 
-            const mrn = transformMRN(Number(lastPatient.mrn) + 1)
+            const mrn = transformMRN(lastPatient ? Number(lastPatient.mrn) + 1 : 1)
 
             const newPatient = await this.prisma.patient.create({
                 data: {
