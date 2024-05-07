@@ -109,7 +109,7 @@ export class AdradospecController {
   @Get('/analytics')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Role(Roles.specialist, Roles.centerAdmin)
+  @Role(Roles.specialist, Roles.admin)
   async analytics(@Res() res: Response) {
     return await this.adradospecService.analytics(res)
   }
@@ -117,7 +117,7 @@ export class AdradospecController {
   @Get('/charts')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Role(Roles.specialist, Roles.centerAdmin)
+  @Role(Roles.specialist, Roles.admin)
   async charts(@Res() res: Response, @Query() q: ChartDTO) {
     return await this.adradospecService.charts(res, q)
   }
