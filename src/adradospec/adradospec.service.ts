@@ -288,7 +288,12 @@ export class AdradospecService {
                 orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
             })
 
-            const total = await this.prisma.center.count({ where: { ...status ? { status } : {} } })
+            const total = await this.prisma.practitioner.count({
+                where: {
+                    type: 'system',
+                    ...status ? { status } : {},
+                }
+            })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: { practitioners, total }
