@@ -118,7 +118,7 @@ export class AdradospecService {
 
     async inviteNewAdrasdospec(
         res: Response,
-        { role: authRole, sub }: ExpressUser,
+        { sub }: ExpressUser,
         { email, fullname, role }: InviteDto,
     ) {
         try {
@@ -136,7 +136,7 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Member with the same email already exists")
             }
 
-            if ((authRole !== "admin" && !adradospec.superAdmin) && role === "admin") {
+            if (!adradospec.superAdmin && role === "admin") {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Only the Super Admin can invite an Admin")
             }
 
