@@ -24,7 +24,7 @@ model Center {
     id          String         @id @default(auto()) @map("_id") @db.ObjectId
     centerName  String         @unique
     email       String         @unique
-    ip          String
+    ip          String?
     address     String
     city        String
     state       String

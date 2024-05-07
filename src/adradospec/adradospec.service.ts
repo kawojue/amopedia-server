@@ -91,6 +91,10 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email or password')
             }
 
+            if (adradospec.status === "SUSPENDED") {
+                return this.response.sendError(res, StatusCodes.Forbidden, "Your account has been suspended")
+            }
+
             const isMatch = await this.encryption.compareAsync(password, adradospec.password)
             if (!isMatch) {
                 return this.response.sendError(res, StatusCodes.Unauthorized, 'Incorrect password')
