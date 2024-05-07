@@ -187,7 +187,8 @@ export class AdradospecService {
         res: Response,
         {
             limit = 100, page = 1,
-            status, sortBy, search = ""
+            status, sortBy, search = "",
+            endDate = '', startDate = '',
         }: FetchOrganizationsDTO
     ) {
         try {
@@ -202,14 +203,21 @@ export class AdradospecService {
             let centers: Center[]
             let total: number
 
+            const commonWhere = {
+                OR: [
+                    { centerName: { contains: search, mode: 'insensitive' } },
+                    ...this.or(search),
+                ],
+                createdAt: {
+                    gte: startDate !== '' ? new Date(startDate) : new Date(0),
+                    lte: endDate !== '' ? new Date(endDate) : new Date(),
+                }
+            }
+
             if (!status) {
                 centers = await this.prisma.center.findMany({
-                    where: {
-                        OR: [
-                            { centerName: { contains: search, mode: 'insensitive' } },
-                            ...this.or(search),
-                        ]
-                    },
+                    // @ts-ignore
+                    where: commonWhere,
                     take: limit,
                     skip: offset,
                     orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
@@ -218,12 +226,10 @@ export class AdradospecService {
                 total = await this.prisma.center.count()
             } else {
                 centers = await this.prisma.center.findMany({
+                    // @ts-ignore
                     where: {
                         status,
-                        OR: [
-                            { centerName: { contains: search, mode: 'insensitive' } },
-                            ...this.or(search),
-                        ]
+                        ...commonWhere
                     },
                     take: limit,
                     skip: offset,
