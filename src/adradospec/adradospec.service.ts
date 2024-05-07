@@ -128,6 +128,14 @@ export class AdradospecService {
                 where: { id: sub }
             })
 
+            const isExist = await this.prisma.adradospec.findUnique({
+                where: { email }
+            })
+
+            if (isExist) {
+                return this.response.sendError(res, StatusCodes.Conflict, "Member with the same email already exists")
+            }
+
             if ((authRole !== "admin" && !adradospec.superAdmin) && role === "admin") {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Only the Super Admin can invite an Admin")
             }
