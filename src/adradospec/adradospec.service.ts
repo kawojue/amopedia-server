@@ -108,7 +108,12 @@ export class AdradospecService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { fullname: adradospec.fullname, role: adradospec.role },
+                data: {
+                    role: adradospec.role,
+                    email: adradospec.email,
+                    avatar: adradospec.avatar,
+                    fullname: adradospec.fullname,
+                },
                 access_token
             })
         } catch (err) {
