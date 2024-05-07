@@ -12,6 +12,7 @@ async function bootstrap() {
     origin: [
       `http://localhost:3000`,
       `http://localhost:${PORT}`,
+      'https://amorad.vercel.app',
     ],
     credentials: true,
     optionsSuccessStatus: 200,
