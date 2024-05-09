@@ -1,6 +1,5 @@
 import { validateFile } from 'utils/file'
 import { Request, Response } from 'express'
-import { Injectable } from '@nestjs/common'
 import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
@@ -11,6 +10,7 @@ import { ResponseService } from 'lib/response.service'
 import { ChangePasswordDto } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
 
@@ -340,6 +340,21 @@ export class AuthService {
             this.response.sendSuccess(res, StatusCodes.OK, { data: { url } })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error uploading profile photo")
+        }
+    }
+
+    async downloadFile(res: Response, path: string) {
+        try {
+            const fileBuffer = await this.aws.downloadS3(path)
+            res.setHeader('Content-Disposition', `attachment; filename=${path}`)
+            res.setHeader('Content-Type', 'application/octet-stream')
+            res.send(fileBuffer)
+        } catch (err) {
+            if (err instanceof NotFoundException) {
+                return this.response.sendError(res, StatusCodes.NotFound, 'File not found')
+            } else {
+                return this.response.sendError(res, StatusCodes.InternalServerError, 'Internal server error')
+            }
         }
     }
 }

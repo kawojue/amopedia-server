@@ -4,6 +4,8 @@ import { AuthService } from './auth.service'
 import {
   Body, UploadedFile, Post, Put, Req, Patch,
   Controller, UseGuards, Res, UseInterceptors,
+  Get,
+  Query,
 } from '@nestjs/common'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { EmailDto, LoginDto } from './dto/login.dto'
@@ -11,6 +13,7 @@ import { ChangePasswordDto } from './dto/password.dto'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
+import { DownloadFileDTO } from './dto/file'
 
 @ApiTags("Auth")
 @Controller('auth')
@@ -72,5 +75,12 @@ export class AuthController {
     @UploadedFile() file: Express.Multer.File
   ) {
     return await this.authService.updateAvatar(res, file, req.user)
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Get('/download')
+  async downloadFile(@Res() res: Response, @Query() q: DownloadFileDTO) {
+    return await this.authService.downloadFile(res, q.path)
   }
 }

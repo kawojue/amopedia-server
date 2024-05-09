@@ -18,7 +18,7 @@ export const genPassword = async () => {
         characters += String.fromCharCode(i)
     }
 
-    const passwordLength = Math.floor(Math.random() * (17 - 8 + 1)) + 8
+    const passwordLength = Math.floor(Math.random() * (12 - 7 + 1)) + 7
     for (let i = 0; i < passwordLength; i++) {
         const randomIndex = Math.floor(Math.random() * characters.length)
         password += characters[randomIndex]

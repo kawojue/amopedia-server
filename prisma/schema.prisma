@@ -91,7 +91,7 @@ model Patient {
     maritalStatus MaritalStatus?
     address       String
     zip_code      String?
-    status        PatientStatus  @default(Unassigned)
+    status        PatientStatus  @default(New)
     center        Center         @relation(fields: [centerId], references: [id])
     centerId      String         @unique @db.ObjectId
     caseStudies   PatientStudy[]
@@ -100,26 +100,27 @@ model Patient {
 }
 
 model PatientStudy {
-    id             String       @id @default(auto()) @map("_id") @db.ObjectId
-    studyId        String       @unique
-    bodyPart       String
-    priority       String
-    cpt_code       String
-    modality       String
-    procedure      String
-    description    String?
-    clinicalInfo   String?
-    site           String
-    accessionNo    String
-    paperwork      File[]
-    priorStudy     String?
-    dicoms         File[]
-    createdAt      DateTime     @default(now())
-    updatedAt      DateTime     @updatedAt
-    practitioner   Practitioner @relation(fields: [practitionerId], references: [id])
-    practitionerId String       @db.ObjectId
-    patient        Patient      @relation(fields: [patientId], references: [id])
-    patientId      String       @db.ObjectId
+    id               String       @id @default(auto()) @map("_id") @db.ObjectId
+    study_id         String       @unique
+    body_part        String
+    priority         String?
+    cpt_code         String?
+    modality         String?
+    procedure        String?
+    description      String?
+    clinical_info    String?
+    site             String?
+    reporting_status StudyStatus?
+    accession_code   String?      @unique
+    paperwork        File[]
+    dicoms           File[]
+    status           StudyStatus  @default(Unassigned)
+    createdAt        DateTime     @default(now())
+    updatedAt        DateTime     @updatedAt
+    practitioner     Practitioner @relation(fields: [practitionerId], references: [id])
+    practitionerId   String       @db.ObjectId
+    patient          Patient      @relation(fields: [patientId], references: [id])
+    patientId        String       @db.ObjectId
 }
 
 enum Status {
@@ -129,10 +130,14 @@ enum Status {
 }
 
 enum PatientStatus {
-    Closed
-    Opened
-    Assigned
+    New
     Archived
+}
+
+enum StudyStatus {
+    Opened
+    Closed
+    Assigned
     Unassigned
 }
 
