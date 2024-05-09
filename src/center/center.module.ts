@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
 import { CenterService } from './center.service'
 import { PrismaService } from 'lib/prisma.service'
@@ -10,6 +11,7 @@ import { EncryptionService } from 'lib/encryption.service'
   controllers: [CenterController],
   providers: [
     CenterService,
+    AwsService,
     PrismaService,
     MiscService,
     ResponseService,

@@ -5,16 +5,16 @@ import { AuthGuard } from '@nestjs/passport'
 import { AddPatientDTO } from './dto/patient'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
+import { PatientStudyDTO } from './dto/study.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
-import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import {
-  Body, Controller, Get, Param, Patch, Post, Put, Query, Req, Res, UploadedFiles, UseGuards,
-  UseInterceptors
+  Req, Res, UploadedFiles, UseGuards, UseInterceptors,
+  Body, Controller, Get, Param, Patch, Post, Put, Query,
 } from '@nestjs/common'
-import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
+import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
-import { PatientStudyDTO } from './dto/study.dto'
+import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 
 @ApiTags('Center')
 @Controller('center')
