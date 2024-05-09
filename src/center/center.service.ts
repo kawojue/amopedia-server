@@ -699,7 +699,7 @@ export class CenterService {
                 message: `Patient study has been assigned to a ${practitioner.role}`
             })
         } catch (err) {
-
+            this.misc.handleServerError(res, err, "Error assigning patient")
         }
     }
 }
