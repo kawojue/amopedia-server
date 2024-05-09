@@ -7,13 +7,13 @@ import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { PatientStudyDTO } from './dto/study.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
   Body, Controller, Get, Param, Patch, Post, Put, Query,
 } from '@nestjs/common'
 import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 
 @ApiTags('Center')
