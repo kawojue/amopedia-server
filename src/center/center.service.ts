@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Injectable } from '@nestjs/common'
 import { AddPatientDTO } from './dto/patient'
-import { genPassword } from 'helpers/generator'
+import { genFilename, genPassword } from 'helpers/generator'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
 import { SuspendStaffDto } from './dto/auth.dto'
@@ -12,10 +12,14 @@ import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 import { titleText, toLowerCase, toUpperCase, transformMRN } from 'helpers/transformer'
+import { validateFile } from 'utils/file'
+import { AwsService } from 'lib/aws.service'
+import { PatientStudyDTO } from './dto/study.dto'
 
 @Injectable()
 export class CenterService {
     constructor(
+        private readonly aws: AwsService,
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
         private readonly response: ResponseService,
@@ -465,6 +469,171 @@ export class CenterService {
             this.response.sendSuccess(res, StatusCodes.OK, { data: patient })
         } catch (err) {
             this.misc.handleServerError(res, err, "Something went wrong while getting a patient record")
+        }
+    }
+
+    async createPatientStudy(
+        res: Response,
+        mrn: string,
+        body: PatientStudyDTO,
+        { centerId }: ExpressUser,
+        files: Array<Express.Multer.File>,
+    ) {
+        try {
+            const patient = await this.prisma.patient.findUnique({
+                where: { mrn, centerId }
+            })
+
+            if (!patient) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient does not exist")
+            }
+
+            let paperwork = [] as IFile[]
+            if (files?.length) {
+                try {
+                    const results = await Promise.all(files.map(async file => {
+                        const re = validateFile(file, 5 << 20, '.pdf', '.docx', '.png', '.jpg', '.jpeg')
+
+                        if (re?.status) {
+                            return this.response.sendError(res, re.status, re.message)
+                        }
+
+                        const path = `${centerId}/${mrn}/${genFilename(re.file.originalname)}`
+                        await this.aws.uploadS3(file, path)
+
+                        return {
+                            path,
+                            type: re.file.mimetype,
+                            url: this.aws.getS3(path)
+                        }
+                    }))
+
+                    paperwork = results.filter((result): result is IFile => !!result)
+                } catch (err) {
+                    try {
+                        await this.aws.removeFiles(paperwork)
+                    } catch (err) {
+                        return this.response.sendError(res, StatusCodes.InternalServerError, "Error uploading paperwork(s)")
+                    }
+                }
+            }
+
+            const studyId = await genPassword()
+
+            await this.prisma.patientStudy.create({
+                data: {
+                    ...body, paperwork,
+                    status: 'Unassigned',
+                    study_id: studyId.toUpperCase(),
+                    patient: { connect: { id: patient.id } }
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { studyId },
+                message: "Patient Study has been added"
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error creating patient study")
+        }
+    }
+
+    async editPatientStudy(
+        res: Response,
+        studyId: string,
+        body: PatientStudyDTO,
+        { centerId }: ExpressUser,
+        files: Array<Express.Multer.File>,
+    ) {
+        try {
+            const study = await this.prisma.patientStudy.findUnique({
+                where: { study_id: studyId },
+                include: { patient: true }
+            })
+
+            if (!study) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
+            }
+
+            const mrn = study.patient.mrn
+
+            if (study.patient.centerId !== centerId) {
+                return this.response.sendError(res, StatusCodes.Unauthorized, "Seek permission to edit")
+            }
+
+            let paperwork = [] as IFile[]
+            if (files?.length) {
+                try {
+                    const results = await Promise.all(files.map(async file => {
+                        const re = validateFile(file, 5 << 20, '.pdf', '.docx', '.png', '.jpg', '.jpeg')
+
+                        if (re?.status) {
+                            return this.response.sendError(res, re.status, re.message)
+                        }
+
+                        const path = `${centerId}/${mrn}/${genFilename(re.file.originalname)}`
+                        await this.aws.uploadS3(file, path)
+
+                        return {
+                            path,
+                            type: re.file.mimetype,
+                            url: this.aws.getS3(path)
+                        }
+                    }))
+
+                    paperwork = results.filter((result): result is IFile => !!result)
+                } catch (err) {
+                    try {
+                        await this.aws.removeFiles(paperwork)
+                    } catch (err) {
+                        return this.response.sendError(res, StatusCodes.InternalServerError, "Error uploading paperwork(s)")
+                    }
+                }
+
+                const paperworks = study.paperwork
+                let movedPaperwork = [] as IFile[]
+                if (paperworks.length > 0) {
+                    for (const paperwork of paperworks) {
+                        if (paperwork?.path) {
+                            const destinationPath = `bin/${paperwork.path}`
+                            const url = this.aws.getS3(destinationPath)
+
+                            await this.aws.copyS3(paperwork.path, destinationPath)
+
+                            movedPaperwork.push({
+                                url,
+                                type: paperwork.type,
+                                path: destinationPath,
+                            })
+                        }
+                    }
+
+                    await Promise.all([
+                        this.aws.removeFiles(paperworks),
+                        this.prisma.trash.create({
+                            data: {
+                                files: movedPaperwork,
+                                center: { connect: { id: centerId } }
+                            }
+                        })
+                    ])
+                }
+            }
+
+            await this.prisma.patientStudy.update({
+                where: { study_id: studyId },
+                data: {
+                    paperwork,
+                    ...body,
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { studyId },
+                message: "Patient study has been updated"
+            })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error updating patient study")
         }
     }
 }

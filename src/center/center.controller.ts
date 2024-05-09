@@ -9,9 +9,12 @@ import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import {
-  Body, Controller, Get, Param, Patch, Post, Put, Query, Req, Res, UseGuards
+  Body, Controller, Get, Param, Patch, Post, Put, Query, Req, Res, UploadedFiles, UseGuards,
+  UseInterceptors
 } from '@nestjs/common'
 import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
+import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { PatientStudyDTO } from './dto/study.dto'
 
 @ApiTags('Center')
 @Controller('center')
@@ -105,5 +108,29 @@ export class CenterController {
     @Param('mrn') mrn: string,
   ) {
     await this.centerService.getPatient(res, mrn, req.user)
+  }
+
+  @Post('/patient/:mrn/study')
+  @Role(Roles.centerAdmin, Roles.specialist)
+  @UseInterceptors(AnyFilesInterceptor())
+  async createPatientStudy(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+    @Body() body: PatientStudyDTO,
+    @UploadedFiles() files: Array<Express.Multer.File>
+  ) {
+    await this.centerService.createPatientStudy(res, mrn, body, req.user, files)
+  }
+
+  @Put('/patient/:mrn/study/:studyId/edit')
+  async editPatientStudy(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: PatientStudyDTO,
+    @Param('studyId') studyId: string,
+    @UploadedFiles() files: Array<Express.Multer.File>
+  ) {
+    await this.centerService.editPatientStudy(res, studyId, body, req.user, files)
   }
 }

@@ -34,6 +34,7 @@ model Center {
     status      Status         @default(PENDING)
     createdAt   DateTime       @default(now())
     updatedAt   DateTime       @updatedAt
+    bin         Trash[]
     patients    Patient[]
     admins      CenterAdmin[]
     practioners Practitioner[]
@@ -100,8 +101,8 @@ model Patient {
 }
 
 model PatientStudy {
-    id               String       @id @default(auto()) @map("_id") @db.ObjectId
-    study_id         String       @unique
+    id               String        @id @default(auto()) @map("_id") @db.ObjectId
+    study_id         String        @unique
     body_part        String
     priority         String?
     cpt_code         String?
@@ -111,16 +112,23 @@ model PatientStudy {
     clinical_info    String?
     site             String?
     reporting_status StudyStatus?
-    accession_code   String?      @unique
+    accession_code   String?       @unique
     paperwork        File[]
     dicoms           File[]
-    status           StudyStatus  @default(Unassigned)
-    createdAt        DateTime     @default(now())
-    updatedAt        DateTime     @updatedAt
-    practitioner     Practitioner @relation(fields: [practitionerId], references: [id])
-    practitionerId   String       @db.ObjectId
-    patient          Patient      @relation(fields: [patientId], references: [id])
-    patientId        String       @db.ObjectId
+    status           StudyStatus   @default(Unassigned)
+    createdAt        DateTime      @default(now())
+    updatedAt        DateTime      @updatedAt
+    practitioner     Practitioner? @relation(fields: [practitionerId], references: [id])
+    practitionerId   String?       @db.ObjectId
+    patient          Patient       @relation(fields: [patientId], references: [id])
+    patientId        String        @db.ObjectId
+}
+
+model Trash {
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    files    File[]
+    center   Center @relation(fields: [centerId], references: [id])
+    centerId String @unique @db.ObjectId
 }
 
 enum Status {

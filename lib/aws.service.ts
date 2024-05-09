@@ -45,33 +45,76 @@ export class AwsService {
         return `${this.domain}/${path}`
     }
 
-    async downloadS3(path: string): Promise<Buffer> {
+    async copyS3(sourceKey: string, destinationKey: string) {
+        const getObjectParams: GetObjectAclCommandInput = {
+            Key: sourceKey,
+            Bucket: this.bucketName,
+        }
+
+        const getObjectCommand: GetObjectCommand = new GetObjectCommand(getObjectParams)
+        const { Body } = await this.s3.send(getObjectCommand)
+
+        if (!Body) {
+            throw new NotFoundException('Source file not found')
+        }
+
+        const putObjectParams: PutObjectCommandInput = {
+            Key: destinationKey,
+            Body: Body,
+            Bucket: this.bucketName,
+        }
+
+        const putObjectCommand: PutObjectCommand = new PutObjectCommand(putObjectParams)
+        await this.s3.send(putObjectCommand)
+    }
+
+    async downloadS3(path: string): Promise<{
+        data: Buffer
+        contentLength: number
+    }> {
         const params: GetObjectAclCommandInput = {
             Key: path,
             Bucket: this.bucketName,
         }
 
         try {
-            const { Body } = await this.s3.send(new GetObjectCommand(params))
-            if (!Body) {
+            const response = await this.s3.send(new GetObjectCommand(params))
+            const body = response.Body
+
+            if (!body) {
                 throw new NotFoundException('File not found')
             }
 
             const chunks: Uint8Array[] = []
-            if (typeof Body[Symbol.asyncIterator] === 'function') {
-                for await (const chunk of Body as AsyncIterable<Uint8Array>) {
+            let contentLength = 0
+
+            if (typeof body[Symbol.asyncIterator] === 'function') {
+                for await (const chunk of body as AsyncIterable<Uint8Array>) {
                     chunks.push(chunk)
+                    contentLength += chunk.length
                 }
             } else {
                 throw new Error('Body does not have an async iterator')
             }
 
-            return Buffer.concat(chunks)
+            const data = Buffer.concat(chunks)
+
+            return { data, contentLength }
         } catch (error) {
             if (error instanceof NotFoundException) {
                 throw error
             } else {
                 throw new Error('Failed to download file from S3')
+            }
+        }
+    }
+
+    async removeFiles(files: IFile[]) {
+        if (files.length > 0) {
+            for (const file of files) {
+                if (file?.path) {
+                    await this.deleteS3(file.path)
+                }
             }
         }
     }

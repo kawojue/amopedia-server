@@ -1,5 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
+import {
+    IsEnum, IsNotEmpty, IsOptional, IsString
+} from 'class-validator'
+
+enum ReportingStatus {
+    Closed = "Closed",
+    Open = "Opened"
+}
 
 export class PatientStudyDTO {
     @ApiProperty({
@@ -66,9 +73,11 @@ export class PatientStudyDTO {
     access_code: string
 
     @ApiProperty({
+        enum: ReportingStatus,
         example: 'Closed/Opened'
     })
-    reporting_status: string
+    @IsEnum(ReportingStatus)
+    reporting_status: ReportingStatus
 
     @ApiProperty({
         type: Array<Express.Multer.File>
