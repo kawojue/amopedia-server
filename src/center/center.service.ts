@@ -555,6 +555,10 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
             }
 
+            if (study.patient.status === "Archived") {
+                return this.response.sendError(res, StatusCodes.Forbidden, "Patient has been archived. Unarchived first..")
+            }
+
             const mrn = study.patient.mrn
 
             if (study.patient.centerId !== centerId) {
@@ -634,6 +638,68 @@ export class CenterService {
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error updating patient study")
+        }
+    }
+
+    async assignPatientStudy(
+        res: Response,
+        mrn: string,
+        studyId: string,
+        practitionerId: string,
+        { centerId }: ExpressUser,
+    ) {
+        try {
+            const patient = await this.prisma.patient.findUnique({
+                where: { mrn, centerId },
+                select: { id: true, fullname: true, mrn: true, status: true },
+            })
+
+            if (!patient) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient not found")
+            }
+
+            if (patient.status === "Archived") {
+                return this.response.sendError(res, StatusCodes.Forbidden, "Unarchive patient before assigning")
+            }
+
+            const study = await this.prisma.patientStudy.findUnique({
+                where: { study_id: studyId, patientId: patient.id }
+            })
+
+            if (!study) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient study does not exist")
+            }
+
+            const practitioner = await this.prisma.practitioner.findUnique({
+                where: { id: practitionerId },
+                select: { fullname: true, role: true }
+            })
+
+            if (!practitioner) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Practitioner does not exist")
+            }
+
+            await this.prisma.$transaction([
+                this.prisma.practitioner.update({
+                    where: { id: practitionerId },
+                    data: {
+                        patientStudies: {
+                            connect: { id: study.id }
+                        }
+                    }
+                }),
+                this.prisma.patientStudy.update({
+                    where: { study_id: studyId },
+                    data: { status: 'Assigned' }
+                })
+            ])
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { studyId, patient, practitioner },
+                message: `Patient study has been assigned to a ${practitioner.role}`
+            })
+        } catch (err) {
+
         }
     }
 }

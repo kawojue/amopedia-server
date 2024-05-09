@@ -139,4 +139,16 @@ export class CenterController {
   ) {
     await this.centerService.editPatientStudy(res, studyId, body, req.user, files)
   }
+
+  @Patch('/patient/:mrn/study/:studyId/:practitionerId/assign')
+  @Role(Roles.specialist, Roles.centerAdmin)
+  async assignPatientStudy(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+    @Param('studyId') studyId: string,
+    @Param('practitionerId') practitionerId: string,
+  ) {
+    await this.centerService.assignPatientStudy(res, mrn, studyId, practitionerId, req.user)
+  }
 }
