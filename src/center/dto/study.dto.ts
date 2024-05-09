@@ -85,3 +85,16 @@ export class PatientStudyDTO {
     @IsOptional()
     paperworks: Array<Express.Multer.File>
 }
+
+enum DesignateStudy {
+    Assign = "Assigned",
+    Unassign = "Unassigned"
+}
+
+export class DesignateStudyDTO {
+    @ApiProperty({
+        enum: DesignateStudy,
+    })
+    @IsEnum(DesignateStudy)
+    action: DesignateStudy
+}

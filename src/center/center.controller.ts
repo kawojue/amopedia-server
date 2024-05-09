@@ -11,7 +11,6 @@ import {
 } from './dto/invite.dto'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
-import { PatientStudyDTO } from './dto/study.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
@@ -19,6 +18,7 @@ import {
 } from '@nestjs/common'
 import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
 @ApiTags('Center')
 @Controller('center')
@@ -144,27 +144,16 @@ export class CenterController {
     await this.centerService.editPatientStudy(res, studyId, body, req.user, files)
   }
 
-  @Patch('/patient/:mrn/study/:studyId/:practitionerId/assign')
+  @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
   @Role(Roles.specialist, Roles.centerAdmin)
-  async assignPatientStudy(
+  async designatePatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
     @Param('mrn') mrn: string,
     @Param('studyId') studyId: string,
+    @Query() query: DesignateStudyDTO,
     @Param('practitionerId') practitionerId: string,
   ) {
-    await this.centerService.assignPatientStudy(res, mrn, studyId, practitionerId, req.user)
-  }
-
-  @Patch('/patient/:mrn/study/:studyId/:practitionerId/unassign')
-  @Role(Roles.specialist, Roles.centerAdmin)
-  async unassignPatientStudy(
-    @Req() req: IRequest,
-    @Res() res: Response,
-    @Param('mrn') mrn: string,
-    @Param('studyId') studyId: string,
-    @Param('practitionerId') practitionerId: string,
-  ) {
-    await this.centerService.unassignPatientStudy(res, mrn, studyId, practitionerId, req.user)
+    await this.centerService.designatePatientStudy(res, mrn, studyId, practitionerId, req.user, query)
   }
 }
