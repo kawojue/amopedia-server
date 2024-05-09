@@ -280,7 +280,8 @@ export class AdradospecService {
         res: Response,
         {
             limit = 100, page = 1, role,
-            status, sortBy, search = ""
+            status, sortBy, search = '',
+            endDate = '', startDate = '',
         }: FetchPractitionersDTO
     ) {
         try {
@@ -296,6 +297,10 @@ export class AdradospecService {
                 where: {
                     role,
                     ...status ? { status } : {},
+                    createdAt: {
+                        gte: startDate !== '' ? new Date(startDate) : new Date(0),
+                        lte: endDate !== '' ? new Date(endDate) : new Date(),
+                    },
                     type: 'system',
                     OR: [
                         { fullname: { contains: search, mode: 'insensitive' } },
@@ -311,6 +316,10 @@ export class AdradospecService {
                 where: {
                     type: 'system',
                     ...status ? { status } : {},
+                    createdAt: {
+                        gte: startDate !== '' ? new Date(startDate) : new Date(0),
+                        lte: endDate !== '' ? new Date(endDate) : new Date(),
+                    },
                 }
             })
 

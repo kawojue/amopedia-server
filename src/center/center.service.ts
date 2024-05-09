@@ -1,24 +1,26 @@
 import { Response } from 'express'
-import { Roles } from '@prisma/client'
 import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
 import { AwsService } from 'lib/aws.service'
 import { AddPatientDTO } from './dto/patient'
+import { $Enums, Roles } from '@prisma/client'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
 import {
     InviteCenterAdminDTO, InviteMedicalStaffDTO
 } from './dto/invite.dto'
 import { SuspendStaffDto } from './dto/auth.dto'
-import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 import { PrismaService } from 'lib/prisma.service'
 import {
     titleText, toLowerCase, toUpperCase, transformMRN
 } from 'helpers/transformer'
 import { ResponseService } from 'lib/response.service'
-import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
+import {
+    ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDto
+} from './dto/fetch.dto'
+import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
 @Injectable()
 export class CenterService {
@@ -645,6 +647,241 @@ export class CenterService {
         }
     }
 
+    async fetchPatients(
+        res: Response,
+        { sub, role }: ExpressUser,
+        {
+            limit = 100, page = 1,
+            status, sortBy, search = '',
+            endDate = '', startDate = '',
+        }: FetchPatientDTO,
+    ) {
+        try {
+            let patients = []
+            if (role === "radiologist" || role === "doctor") {
+                const practitioner = await this.getPractitioner(sub)
+                if (practitioner) {
+                    patients = await this.fetchPatientsByPractitioner(practitioner.id, status, sortBy, search, startDate, endDate, limit, page)
+                }
+            } else {
+                patients = await this.fetchAllPatients(status, sortBy, search, startDate, endDate, limit, page)
+            }
+            this.response.sendSuccess(res, StatusCodes.OK, { data: patients })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error fetching patients")
+        }
+    }
+
+    private async fetchPatientsByPractitioner(practitionerId: string, status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
+        const offset = (page - 1) * limit
+        const dateFilter = {
+            gte: startDate !== '' ? new Date(startDate) : new Date(0),
+            lte: endDate !== '' ? new Date(endDate) : new Date(),
+        }
+        const patientStudies = await this.prisma.patientStudy.findMany({
+            where: {
+                practitionerId,
+                updatedAt: dateFilter,
+            },
+            select: {
+                patientId: true,
+            },
+        })
+
+        const patientIdsSet = new Set(patientStudies.map(ps => ps.patientId))
+        const patientIds = Array.from(patientIdsSet)
+
+        const patients = await this.prisma.patient.findMany({
+            where: {
+                id: { in: patientIds },
+                ...status ? { status } : {},
+                OR: [
+                    { fullname: { contains: search, mode: 'insensitive' } },
+                    { mrn: { contains: search, mode: 'insensitive' } },
+                    { nin: { contains: search, mode: 'insensitive' } },
+                    { address: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                ],
+                createdAt: dateFilter
+            },
+            take: limit,
+            skip: offset,
+            select: {
+                id: true,
+                mrn: true,
+                dob: true,
+                email: true,
+                phone: true,
+                gender: true,
+                status: true,
+                fullname: true,
+            },
+            orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
+        })
+
+        return patients
+    }
+
+    private async fetchAllPatients(status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
+        const offset = (page - 1) * limit
+
+        const dateFilter = {
+            gte: startDate !== '' ? new Date(startDate) : new Date(0),
+            lte: endDate !== '' ? new Date(endDate) : new Date(),
+        }
+
+        const patients = await this.prisma.patient.findMany({
+            where: {
+                ...status ? { status } : {},
+                OR: [
+                    { fullname: { contains: search, mode: 'insensitive' } },
+                    { mrn: { contains: search, mode: 'insensitive' } },
+                    { nin: { contains: search, mode: 'insensitive' } },
+                    { address: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                ],
+                createdAt: dateFilter,
+            },
+            take: limit,
+            skip: offset,
+            select: {
+                id: true,
+                mrn: true,
+                dob: true,
+                email: true,
+                phone: true,
+                gender: true,
+                status: true,
+                fullname: true,
+            },
+            orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
+        })
+
+        return patients
+    }
+
+
+    async fetchPatientStudies(
+        res: Response,
+        { sub, role }: ExpressUser,
+        {
+            limit = 100, page = 1,
+            status, sortBy, search = '',
+            endDate = '', startDate = '',
+        }: FetchPatientStudyDTO,
+    ) {
+        try {
+            limit = Number(limit)
+            const offset = (Number(page) - 1) * limit
+            let total = 0
+            let patientStudies = []
+
+            const dateFilter = {
+                gte: startDate !== '' ? new Date(startDate) : new Date(0),
+                lte: endDate !== '' ? new Date(endDate) : new Date(),
+            }
+
+            const searchFilter = [
+                { body_part: { contains: search, mode: 'insensitive' } },
+                { clinical_info: { contains: search, mode: 'insensitive' } },
+                { accession_code: { contains: search, mode: 'insensitive' } },
+            ]
+
+            const commonWhereConditions = {
+                ...status && { status },
+                updatedAt: dateFilter,
+            }
+
+            if (role === "radiologist" || role === "doctor") {
+                const practitioner = await this.getPractitioner(sub)
+                const practitionerId = practitioner.id
+
+                patientStudies = await this.fetchStudiesByPractitioner(practitionerId, commonWhereConditions, searchFilter, sortBy, limit, offset)
+                total = await this.getTotalCountByPractitioner(practitionerId, commonWhereConditions)
+            } else {
+                patientStudies = await this.fetchAllStudies(commonWhereConditions, searchFilter, sortBy, limit, offset)
+                total = await this.getTotalCount(commonWhereConditions)
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: { patientStudies, total } })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error fetching reports")
+        }
+    }
+
+    private async getPractitioner(id: string) {
+        return await this.prisma.practitioner.findUnique({ where: { id } })
+    }
+
+    private async fetchStudiesByPractitioner(practitionerId: string, commonWhereConditions: any, searchFilter: any[], sortBy: string, limit: number, offset: number) {
+        return await this.prisma.patientStudy.findMany({
+            where: {
+                practitionerId,
+                ...commonWhereConditions,
+                OR: searchFilter,
+            },
+            take: limit,
+            skip: offset,
+            orderBy: sortBy === "name" ? { body_part: 'asc' } : { updatedAt: 'desc' },
+            select: {
+                patient: {
+                    select: {
+                        mrn: true,
+                        dob: true,
+                        fullname: true,
+                    },
+                },
+                id: true,
+                status: true,
+                modality: true,
+                priority: true,
+                study_id: true,
+                body_part: true,
+            },
+        })
+    }
+
+    private async getTotalCountByPractitioner(practitionerId: string, commonWhereConditions: any) {
+        return await this.prisma.patientStudy.count({
+            where: {
+                practitionerId,
+                ...commonWhereConditions,
+            },
+        })
+    }
+
+    private async fetchAllStudies(commonWhereConditions: any, searchFilter: any[], sortBy: string, limit: number, offset: number) {
+        return await this.prisma.patientStudy.findMany({
+            where: {
+                ...commonWhereConditions,
+                OR: searchFilter,
+            },
+            take: limit,
+            skip: offset,
+            orderBy: sortBy === "name" ? { body_part: 'asc' } : { updatedAt: 'desc' },
+            select: {
+                patient: {
+                    select: {
+                        mrn: true,
+                        dob: true,
+                        fullname: true,
+                    },
+                },
+                id: true,
+                status: true,
+                modality: true,
+                priority: true,
+                study_id: true,
+                body_part: true,
+            },
+        })
+    }
+
+    private async getTotalCount(commonWhereConditions: any) {
+        return await this.prisma.patientStudy.count({ where: commonWhereConditions })
+    }
+
+
     async designatePatientStudy(
         res: Response,
         mrn: string,
@@ -703,7 +940,7 @@ export class CenterService {
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: { studyId, patient, practitioner },
-                message: `Patient study has been assigned ${practitioner.fullname}`
+                message: `Patient study has been ${action} to ${practitioner.fullname}`
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error assigning patient")

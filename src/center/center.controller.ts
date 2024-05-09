@@ -16,8 +16,10 @@ import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
   Body, Controller, Get, Param, Patch, Post, Put, Query,
 } from '@nestjs/common'
-import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import {
+  ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDto
+} from './dto/fetch.dto'
 import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
 @ApiTags('Center')
@@ -155,5 +157,25 @@ export class CenterController {
     @Param('practitionerId') practitionerId: string,
   ) {
     await this.centerService.designatePatientStudy(res, mrn, studyId, practitionerId, req.user, query)
+  }
+
+  @Get('/patients')
+  @Role(Roles.specialist, Roles.centerAdmin, Roles.centerAdmin, Roles.doctor, Roles.radiologist)
+  async fetchPatients(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Query() query: FetchPatientDTO,
+  ) {
+    await this.centerService.fetchPatients(res, req.user, query)
+  }
+
+  @Get('/reports')
+  @Role(Roles.specialist, Roles.centerAdmin, Roles.centerAdmin, Roles.doctor, Roles.radiologist)
+  async fetchPatientStudies(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Query() query: FetchPatientStudyDTO
+  ) {
+    await this.centerService.fetchPatientStudies(res, req.user, query)
   }
 }
