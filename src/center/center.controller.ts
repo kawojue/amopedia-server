@@ -1,8 +1,14 @@
 import { Response } from 'express'
 import { Roles } from '@prisma/client'
+import {
+  ApiBearerAuth, ApiOperation, ApiTags
+} from '@nestjs/swagger'
 import { Role } from 'src/role.decorator'
 import { AuthGuard } from '@nestjs/passport'
 import { AddPatientDTO } from './dto/patient'
+import {
+  InviteCenterAdminDTO, InviteMedicalStaffDTO
+} from './dto/invite.dto'
 import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { PatientStudyDTO } from './dto/study.dto'
@@ -13,8 +19,6 @@ import {
 } from '@nestjs/common'
 import { ChartDTO, FetchStaffDto } from './dto/fetch.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
-import { InviteCenterAdminDTO, InviteMedicalStaffDTO } from './dto/invite.dto'
 
 @ApiTags('Center')
 @Controller('center')
@@ -150,5 +154,17 @@ export class CenterController {
     @Param('practitionerId') practitionerId: string,
   ) {
     await this.centerService.assignPatientStudy(res, mrn, studyId, practitionerId, req.user)
+  }
+
+  @Patch('/patient/:mrn/study/:studyId/:practitionerId/unassign')
+  @Role(Roles.specialist, Roles.centerAdmin)
+  async unassignPatientStudy(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+    @Param('studyId') studyId: string,
+    @Param('practitionerId') practitionerId: string,
+  ) {
+    await this.centerService.unassignPatientStudy(res, mrn, studyId, practitionerId, req.user)
   }
 }
