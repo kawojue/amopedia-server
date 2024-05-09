@@ -83,5 +83,5 @@ export class PatientStudyDTO {
         type: Array<Express.Multer.File>
     })
     @IsOptional()
-    attachments: Array<Express.Multer.File>
+    paperworks: Array<Express.Multer.File>
 }

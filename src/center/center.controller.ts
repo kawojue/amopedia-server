@@ -7,7 +7,7 @@ import { SuspendStaffDto } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { PatientStudyDTO } from './dto/study.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
   Body, Controller, Get, Param, Patch, Post, Put, Query,
@@ -110,6 +110,9 @@ export class CenterController {
     await this.centerService.getPatient(res, mrn, req.user)
   }
 
+  @ApiOperation({
+    summary: 'The formdata key should be paperworks'
+  })
   @Post('/patient/:mrn/study')
   @Role(Roles.centerAdmin, Roles.specialist)
   @UseInterceptors(AnyFilesInterceptor())
@@ -123,6 +126,9 @@ export class CenterController {
     await this.centerService.createPatientStudy(res, mrn, body, req.user, files)
   }
 
+  @ApiOperation({
+    summary: 'The formdata key should be paperworks'
+  })
   @Put('/patient/:mrn/study/:studyId/edit')
   async editPatientStudy(
     @Req() req: IRequest,
