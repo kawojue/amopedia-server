@@ -32,6 +32,21 @@ export class CenterService {
         private readonly encryption: EncryptionService,
     ) { }
 
+    private async isNotAccessibleForPractitioner(sub: string, centerId: string, patientId: string) {
+        const practitioner = await this.prisma.practitioner.findUnique({
+            where: { id: sub, centerId }
+        })
+
+        const studies = await this.prisma.patientStudy.findMany({
+            where: {
+                patientId,
+                practitionerId: practitioner.id
+            }
+        })
+
+        return studies.length === 0
+    }
+
     async fetchStaffs(
         res: Response,
         { sub }: ExpressUser,
@@ -461,7 +476,7 @@ export class CenterService {
     async getPatient(
         res: Response,
         mrn: string,
-        { centerId }: ExpressUser,
+        { sub, centerId, role }: ExpressUser,
     ) {
         try {
             const patient = await this.prisma.patient.findUnique({
@@ -470,6 +485,14 @@ export class CenterService {
 
             if (!patient) {
                 return this.response.sendError(res, StatusCodes.NotFound, `Patient does not exist`)
+            }
+
+            if (role === "doctor" || role === "radiologist") {
+                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, centerId, patient.id)
+
+                if (isNotAccessible) {
+                    return this.response.sendError(res, StatusCodes.Forbidden, "Access denied")
+                }
             }
 
             this.response.sendSuccess(res, StatusCodes.OK, { data: patient })
@@ -657,6 +680,9 @@ export class CenterService {
         }: FetchPatientDTO,
     ) {
         try {
+            page = Number(page)
+            limit = Number(limit)
+
             let patients = []
             if (role === "radiologist" || role === "doctor") {
                 const practitioner = await this.getPractitioner(sub)
@@ -674,18 +700,18 @@ export class CenterService {
 
     private async fetchPatientsByPractitioner(practitionerId: string, status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
         const offset = (page - 1) * limit
+
         const dateFilter = {
             gte: startDate !== '' ? new Date(startDate) : new Date(0),
             lte: endDate !== '' ? new Date(endDate) : new Date(),
         }
+
         const patientStudies = await this.prisma.patientStudy.findMany({
             where: {
                 practitionerId,
                 updatedAt: dateFilter,
             },
-            select: {
-                patientId: true,
-            },
+            select: { patientId: true },
         })
 
         const patientIdsSet = new Set(patientStudies.map(ps => ps.patientId))
@@ -881,7 +907,6 @@ export class CenterService {
         return await this.prisma.patientStudy.count({ where: commonWhereConditions })
     }
 
-
     async designatePatientStudy(
         res: Response,
         mrn: string,
@@ -945,5 +970,103 @@ export class CenterService {
         } catch (err) {
             this.misc.handleServerError(res, err, "Error assigning patient")
         }
+    }
+
+    async getPatientStudy(
+        res: Response,
+        { sub, centerId, role }: ExpressUser,
+        mrn: string,
+        studyId: string
+    ) {
+        try {
+            const patient = await this.prisma.patient.findUnique({
+                where: { mrn, centerId }
+            })
+
+            const study = await this.prisma.patientStudy.findUnique({
+                where: {
+                    study_id: studyId,
+                    patientId: patient.id,
+                }
+            })
+
+            if (!study) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient Study not found")
+            }
+
+            if (role === "radiologist" || role === "doctor") {
+                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, centerId, patient.id)
+
+                if (isNotAccessible) {
+                    return this.response.sendError(res, StatusCodes.Forbidden, "Access denied")
+                }
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: study })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
+
+    async uploadDicomFiles(
+        res: Response,
+        studyId: string,
+        { centerId }: ExpressUser,
+        files: Array<Express.Multer.File>
+    ) {
+        try {
+            const study = await this.prisma.patientStudy.findUnique({
+                where: {
+                    study_id: studyId,
+                    patient: { centerId },
+                }
+            })
+
+            if (!study) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
+            }
+
+            let dicoms = [] as IFile[]
+            if (files?.length) {
+                try {
+                    const results = await Promise.all(files.map(async file => {
+                        const re = validateFile(file, 50 << 20, '.dcm')
+
+                        if (re?.status) {
+                            return this.response.sendError(res, re.status, re.message)
+                        }
+
+                        const path = `${centerId}/${studyId}/${genFilename(re.file.originalname)}`
+                        await this.aws.uploadS3(file, path)
+
+                        return {
+                            path,
+                            type: re.file.mimetype,
+                            url: this.aws.getS3(path)
+                        }
+                    }))
+
+                    dicoms = results.filter((result): result is IFile => !!result)
+                } catch (err) {
+                    try {
+                        await this.aws.removeFiles(dicoms)
+                    } catch (err) {
+                        return this.response.sendError(res, StatusCodes.InternalServerError, "Something went wrong while uploading DICOM Files")
+                    }
+                }
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: dicoms })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error upload DICOM Files")
+        }
+    }
+
+    async bin(res: Response, { centerId }: ExpressUser) {
+        const trash = await this.prisma.trash.findMany({
+            where: { centerId }
+        })
+
+        this.response.sendSuccess(res, StatusCodes.OK, { data: trash })
     }
 }
