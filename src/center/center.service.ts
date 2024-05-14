@@ -174,6 +174,7 @@ export class CenterService {
 
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
+                    centerId,
                     OR: [
                         { email: { equals: email, mode: 'insensitive' } },
                         { practiceNumber: { equals: practiceNumber, mode: 'insensitive' } },
