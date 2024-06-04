@@ -21,55 +21,63 @@ export class AdradospecController {
 
   // @Post('/signup')
   // async signup(@Res() res: Response, @Body() body: SignupDTO) {
-  //   return await this.adradospecService.signup(res, body)
+  //   await this.adradospecService.signup(res, body)
   // }
 
   @Post('/login')
   async login(@Res() res: Response, @Body() body: LoginDTO) {
-    return await this.adradospecService.login(res, body)
+    await this.adradospecService.login(res, body)
   }
 
   @ApiBearerAuth()
+  @Role(Roles.admin)
   @Post('/invite-member')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Role(Roles.admin)
   async inviteNewAdrasdospec(
     @Res() res: Response,
     @Req() req: IRequest,
     @Body() body: InviteDTO
   ) {
-    return await this.adradospecService.inviteNewAdrasdospec(res, req.user, body)
+    await this.adradospecService.inviteNewAdrasdospec(res, req.user, body)
   }
 
   @ApiBearerAuth()
   @Post('/fetch-members')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Role(Roles.admin, Roles.specialist)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   async fetchAdradospec(@Res() res: Response,) {
-    return await this.adradospecService.fetchAdradospec(res)
+    await this.adradospecService.fetchAdradospec(res)
   }
 
   @ApiBearerAuth()
   @Get('/facilities')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Role(Roles.admin, Roles.specialist)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   async fetchOrganizations(
     @Res() res: Response,
     @Query() query: FetchOrganizationsDTO
   ) {
-    return await this.adradospecService.fetchOrganizations(res, query)
+    await this.adradospecService.fetchOrganizations(res, query)
   }
 
-  @Patch('/facilities/:centerId/toggle-status')
   @ApiBearerAuth()
+  @Get('/facilities/:centerId')
+  @Role(Roles.admin, Roles.specialist)
   @UseGuards(AuthGuard('jwt'), RolesGuard)
+  async fetchOrganization(@Res() res: Response, @Param('centerId') centerId: string) {
+    await this.adradospecService.fetchOrganization(res, centerId)
+  }
+
+  @ApiBearerAuth()
   @Role(Roles.admin)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Patch('/facilities/:centerId/toggle-status')
   async toggleOrgStatus(
     @Res() res: Response,
     @Query() query: ToggleStatusDTO,
     @Param('centerId') centerId: string,
   ) {
-    return await this.adradospecService.toggleOrgStatus(res, centerId, query)
+    await this.adradospecService.toggleOrgStatus(res, centerId, query)
   }
 
   @ApiBearerAuth()
@@ -80,7 +88,7 @@ export class AdradospecController {
     @Res() res: Response,
     @Query() query: FetchPractitionersDTO
   ) {
-    return await this.adradospecService.fetchPractitioners(res, query)
+    await this.adradospecService.fetchPractitioners(res, query)
   }
 
   @ApiBearerAuth()
@@ -91,7 +99,7 @@ export class AdradospecController {
     @Res() res: Response,
     @Param('practitionerId') practitionerId: string,
   ) {
-    return await this.adradospecService.fetchPractitioner(res, practitionerId)
+    await this.adradospecService.fetchPractitioner(res, practitionerId)
   }
 
   @ApiBearerAuth()
@@ -103,7 +111,7 @@ export class AdradospecController {
     @Query() query: ToggleStatusDTO,
     @Param('practitionerId') practitionerId: string,
   ) {
-    return await this.adradospecService.togglePractitionerStatus(res, practitionerId, query)
+    await this.adradospecService.togglePractitionerStatus(res, practitionerId, query)
   }
 
   @Get('/analytics')
@@ -111,7 +119,7 @@ export class AdradospecController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Role(Roles.specialist, Roles.admin)
   async analytics(@Res() res: Response) {
-    return await this.adradospecService.analytics(res)
+    await this.adradospecService.analytics(res)
   }
 
   @Get('/charts')
@@ -119,6 +127,6 @@ export class AdradospecController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Role(Roles.specialist, Roles.admin)
   async charts(@Res() res: Response, @Query() q: ChartDTO) {
-    return await this.adradospecService.charts(res, q)
+    await this.adradospecService.charts(res, q)
   }
 }

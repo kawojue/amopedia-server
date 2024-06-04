@@ -190,16 +190,16 @@ export class AdradospecService {
         }: FetchOrganizationsDTO
     ) {
         try {
-            limit = Number(limit)
             page = Number(page)
+            limit = Number(limit)
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
             }
 
             const offset = (page - 1) * limit
 
-            let centers: Center[]
             let total: number
+            let centers: Center[]
 
             const commonWhere = {
                 OR: [
@@ -242,6 +242,33 @@ export class AdradospecService {
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error fetching facilities")
+        }
+    }
+
+    async fetchOrganization(res: Response, centerId: string) {
+        try {
+            const center = await this.prisma.center.findUnique({
+                where: { id: centerId },
+                include: {
+                    admins: {
+                        where: { superAdmin: true },
+                        select: {
+                            phone: true,
+                            email: true,
+                            avatar: true,
+                            fullname: true,
+                        }
+                    }
+                }
+            })
+
+            if (!center) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Facility not found")
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: center })
+        } catch (err) {
+            this.misc.handleServerError(res, err, "Error fetching facility")
         }
     }
 
