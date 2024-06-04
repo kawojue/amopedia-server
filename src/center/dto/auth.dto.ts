@@ -7,7 +7,7 @@ enum StatusAction {
     SUSPEND = "SUSPENDED"
 }
 
-export class SuspendStaffDto {
+export class SuspendStaffDTO {
     @ApiProperty({
         enum: StatusAction
     })

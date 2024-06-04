@@ -80,7 +80,7 @@ export class PatientStudyDTO {
     reporting_status: ReportingStatus
 
     @ApiProperty({
-        type: Array<Express.Multer.File>
+        type: [File]
     })
     @IsOptional()
     paperworks: Array<Express.Multer.File>

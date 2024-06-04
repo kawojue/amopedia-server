@@ -1,10 +1,13 @@
-import { Transform } from 'class-transformer'
 import { Profession } from 'enums/base'
+import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength } from 'class-validator'
-import { titleText } from 'helpers/transformer'
+import { EmailDTO } from 'src/auth/dto/login.dto'
+import { titleText, toUpperCase } from 'helpers/transformer'
+import {
+    IsEnum, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength
+} from 'class-validator'
 
-export class InviteMedicalStaffDTO {
+export class InviteMedicalStaffDTO extends EmailDTO {
     @ApiProperty({
         example: 'Raheem Kawojue'
     })
@@ -12,13 +15,6 @@ export class InviteMedicalStaffDTO {
     @MaxLength(100)
     @Transform(({ value }) => titleText(value))
     fullname: string
-
-    @ApiProperty({
-        example: 'johndoe@example.com'
-    })
-    @IsEmail({}, { message: 'Invalid email address' })
-    @Transform(({ value }) => value.toLowerCase().trim())
-    email: string
 
     @ApiProperty({
         example: '+2348131911964'
@@ -37,7 +33,7 @@ export class InviteMedicalStaffDTO {
         example: 'A-12345'
     })
     @IsString()
-    @Transform(({ value }) => value.toUpperCase())
+    @Transform(({ value }) => toUpperCase(value))
     practiceNumber: string
 
     @ApiProperty({
@@ -79,7 +75,7 @@ export class InviteMedicalStaffDTO {
     country: string
 }
 
-export class InviteCenterAdminDTO {
+export class InviteCenterAdminDTO extends EmailDTO {
     @ApiProperty({
         example: 'Raheem Kawojue'
     })
@@ -87,13 +83,6 @@ export class InviteCenterAdminDTO {
     @MaxLength(100)
     @Transform(({ value }) => titleText(value))
     fullname: string
-
-    @ApiProperty({
-        example: 'kawojue08@gmail.com'
-    })
-    @IsEmail({}, { message: 'Invalid email address' })
-    @Transform(({ value }) => value.toLowerCase().trim())
-    email: string
 
     @ApiProperty({
         example: '+2348131911964'

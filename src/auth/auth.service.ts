@@ -5,14 +5,14 @@ import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
 import { PrismaService } from 'lib/prisma.service'
 import { getIpAddress } from 'helpers/getIPAddress'
-import { EmailDto, LoginDto } from './dto/login.dto'
+import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
-import { ChangePasswordDto } from './dto/password.dto'
+import { ChangePasswordDTO } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
-import { OrganizationSignupDto, PractitionerSignupDto } from './dto/signup.dto'
+import { OrganizationSignupDTO, PractitionerSignupDTO } from './dto/signup.dto'
 
 @Injectable()
 export class AuthService {
@@ -29,7 +29,7 @@ export class AuthService {
         {
             fullname, password, address, zip_code, city, email,
             country, state, phone, practiceNumber, affiliation,
-        }: PractitionerSignupDto
+        }: PractitionerSignupDTO
     ) {
         try {
             email = toLowerCase(email)
@@ -75,7 +75,7 @@ export class AuthService {
         {
             organizationName, fullname, address, state,
             city, country, email, password, phone, zip_code
-        }: OrganizationSignupDto
+        }: OrganizationSignupDTO
     ) {
         try {
             email = toLowerCase(email)
@@ -125,7 +125,7 @@ export class AuthService {
 
     async login(
         res: Response,
-        { email, password }: LoginDto
+        { email, password }: LoginDTO
     ) {
         try {
             email = toLowerCase(email)
@@ -197,7 +197,7 @@ export class AuthService {
 
     async resetPassword(
         res: Response,
-        { email }: EmailDto
+        { email }: EmailDTO
     ) {
         try {
             email = toLowerCase(email)
@@ -262,7 +262,7 @@ export class AuthService {
     async changePassword(
         res: Response,
         { sub, modelName }: ExpressUser,
-        { currentPassword, newPassword }: ChangePasswordDto
+        { currentPassword, newPassword }: ChangePasswordDTO
     ) {
         try {
             const user = await this.prisma[modelName].findUnique({

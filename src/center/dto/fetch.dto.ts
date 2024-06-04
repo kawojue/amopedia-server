@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { IsEnum, IsOptional } from 'class-validator'
-import { InfiniteScrollWithSearchDto } from './filter.dto'
+import { InfiniteScrollWithSearchDTO } from './filter.dto'
 import { PatientStatus, StudyStatus } from '@prisma/client'
 
 enum Role {
@@ -14,7 +14,7 @@ enum Chart {
     weekdays = "weekdays",
 }
 
-export class FetchStaffDto extends InfiniteScrollWithSearchDto {
+export class FetchStaffDTO extends InfiniteScrollWithSearchDTO {
     @ApiProperty({
         enum: Role
     })
@@ -30,7 +30,7 @@ export class ChartDTO {
     q: Chart
 }
 
-export class FetchSPDTO extends InfiniteScrollWithSearchDto {
+export class FetchSPDTO extends InfiniteScrollWithSearchDTO {
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
         default: 0,

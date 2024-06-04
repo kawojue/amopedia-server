@@ -9,14 +9,12 @@ import { CenterModule } from './center/center.module'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { AdradospecModule } from './adradospec/adradospec.module'
-import { PractitionerModule } from './practitioner/practitioner.module'
 
 @Module({
   imports: [
     AuthModule,
     CenterModule,
     AdradospecModule,
-    PractitionerModule
   ],
   controllers: [AppController],
   providers: [

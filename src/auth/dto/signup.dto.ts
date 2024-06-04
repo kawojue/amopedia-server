@@ -2,11 +2,12 @@ import {
     MaxLength, IsString, IsOptional,
     Matches, IsEmail, IsPhoneNumber,
 } from 'class-validator'
-import { PasswordDto } from './password.dto'
+import { PasswordDTO } from './password.dto'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
+import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 
-export class OrganizationSignupDto extends PasswordDto {
+export class OrganizationSignupDTO extends PasswordDTO {
     @ApiProperty({
         example: 'Raheem Kawojue'
     })
@@ -48,6 +49,7 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     city: string
 
     @ApiProperty({
@@ -55,6 +57,7 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     state: string
 
     @ApiProperty({
@@ -69,10 +72,11 @@ export class OrganizationSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     country: string
 }
 
-export class PractitionerSignupDto extends PasswordDto {
+export class PractitionerSignupDTO extends PasswordDTO {
     @ApiProperty({
         example: 'Raheem Kawojue'
     })
@@ -84,6 +88,7 @@ export class PractitionerSignupDto extends PasswordDto {
         example: 'johndoe@example.com'
     })
     @IsEmail({}, { message: 'Invalid email address' })
+    @Transform(({ value }) => toLowerCase(value))
     email: string
 
     @ApiProperty({
@@ -103,7 +108,7 @@ export class PractitionerSignupDto extends PasswordDto {
         example: 'A-12345'
     })
     @IsString()
-    @Transform(({ value }) => value.toUpperCase())
+    @Transform(({ value }) => toUpperCase(value))
     practiceNumber: string
 
     @ApiProperty({
@@ -118,6 +123,7 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     city: string
 
     @ApiProperty({
@@ -125,13 +131,13 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     state: string
 
     @ApiProperty({
         example: '106101'
     })
     @IsOptional()
-    @Matches(/^\d{5}(?:[-\s]\d{4})?$/, { message: 'Invalid zip code format' })
     zip_code: string
 
     @ApiProperty({
@@ -139,5 +145,6 @@ export class PractitionerSignupDto extends PasswordDto {
     })
     @IsString()
     @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
     country: string
 }

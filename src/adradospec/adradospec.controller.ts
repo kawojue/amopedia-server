@@ -2,10 +2,10 @@ import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/role.decorator'
 import { AuthGuard } from '@nestjs/passport'
-import { LoginDto } from 'src/auth/dto/login.dto'
+import { LoginDTO } from 'src/auth/dto/login.dto'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import { ChartDTO } from 'src/center/dto/fetch.dto'
-import { InviteDto, SignupDto } from './dto/auth.dto'
+import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { AdradospecService } from './adradospec.service'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
@@ -20,12 +20,12 @@ export class AdradospecController {
   constructor(private readonly adradospecService: AdradospecService) { }
 
   // @Post('/signup')
-  // async signup(@Res() res: Response, @Body() body: SignupDto) {
+  // async signup(@Res() res: Response, @Body() body: SignupDTO) {
   //   return await this.adradospecService.signup(res, body)
   // }
 
   @Post('/login')
-  async login(@Res() res: Response, @Body() body: LoginDto) {
+  async login(@Res() res: Response, @Body() body: LoginDTO) {
     return await this.adradospecService.login(res, body)
   }
 
@@ -36,7 +36,7 @@ export class AdradospecController {
   async inviteNewAdrasdospec(
     @Res() res: Response,
     @Req() req: IRequest,
-    @Body() body: InviteDto
+    @Body() body: InviteDTO
   ) {
     return await this.adradospecService.inviteNewAdrasdospec(res, req.user, body)
   }

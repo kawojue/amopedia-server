@@ -6,7 +6,7 @@ enum Sort {
     name = "name"
 }
 
-export class SortByDto {
+export class SortByDTO {
     @ApiProperty({
         enum: Sort
     })
@@ -15,7 +15,7 @@ export class SortByDto {
     sortBy: Sort
 }
 
-export class SearchDto extends SortByDto {
+export class SearchDTO extends SortByDTO {
     @ApiProperty({
         example: 'Raheem'
     })
@@ -24,7 +24,7 @@ export class SearchDto extends SortByDto {
     search: string
 }
 
-export class InfiniteScrollDto {
+export class InfiniteScrollDTO {
     @ApiProperty({
         example: 1
     })
@@ -38,7 +38,7 @@ export class InfiniteScrollDto {
     limit: number
 }
 
-export class InfiniteScrollWithSearchDto extends SearchDto {
+export class InfiniteScrollWithSearchDTO extends SearchDTO {
     @ApiProperty({
         example: 1
     })

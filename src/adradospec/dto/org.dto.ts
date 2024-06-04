@@ -1,9 +1,9 @@
 import { Status } from '@prisma/client'
 import { ApiProperty } from '@nestjs/swagger'
 import { IsEnum, IsOptional } from 'class-validator'
-import { SearchDto } from 'src/center/dto/filter.dto'
+import { SearchDTO } from 'src/center/dto/filter.dto'
 
-export class FetchOrganizationsDTO extends SearchDto {
+export class FetchOrganizationsDTO extends SearchDTO {
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
         default: 0,

@@ -14,12 +14,11 @@ async function bootstrap() {
       `http://localhost:${PORT}`,
       'https://amorad.vercel.app',
     ],
-    credentials: true,
     optionsSuccessStatus: 200,
     methods: 'GET,PATCH,POST,PUT,DELETE',
   })
   app.use(express.json({ limit: 250 << 20 }))
-  app.useGlobalPipes(new ValidationPipe())
+  app.useGlobalPipes(new ValidationPipe({ transform: true }))
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle('Amorad Documentation')

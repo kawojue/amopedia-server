@@ -4,10 +4,10 @@ import { Injectable } from '@nestjs/common'
 import { MiscService } from 'lib/misc.service'
 import { genPassword } from 'helpers/generator'
 import { StatusCodes } from 'enums/statusCodes'
-import { LoginDto } from 'src/auth/dto/login.dto'
+import { LoginDTO } from 'src/auth/dto/login.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ChartDTO } from 'src/center/dto/fetch.dto'
-import { InviteDto, SignupDto } from './dto/auth.dto'
+import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
@@ -54,7 +54,7 @@ export class AdradospecService {
         return OR
     }
 
-    async signup(res: Response, { email, password, fullname }: SignupDto) {
+    async signup(res: Response, { email, password, fullname }: SignupDTO) {
         try {
             email = toLowerCase(email)
             fullname = titleText(fullname)
@@ -81,7 +81,7 @@ export class AdradospecService {
         }
     }
 
-    async login(res: Response, { email, password }: LoginDto) {
+    async login(res: Response, { email, password }: LoginDTO) {
         try {
             const adradospec = await this.prisma.adradospec.findUnique({
                 where: { email: toLowerCase(email) }
@@ -124,7 +124,7 @@ export class AdradospecService {
     async inviteNewAdrasdospec(
         res: Response,
         { sub }: ExpressUser,
-        { email, fullname, role }: InviteDto,
+        { email, fullname, role }: InviteDTO,
     ) {
         try {
             email = toLowerCase(email)

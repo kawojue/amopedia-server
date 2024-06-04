@@ -9,7 +9,7 @@ import { AddPatientDTO } from './dto/patient'
 import {
   InviteCenterAdminDTO, InviteMedicalStaffDTO
 } from './dto/invite.dto'
-import { SuspendStaffDto } from './dto/auth.dto'
+import { SuspendStaffDTO } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import {
@@ -18,13 +18,13 @@ import {
 } from '@nestjs/common'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import {
-  ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDto
+  ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
 import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
+@ApiBearerAuth()
 @ApiTags('Center')
 @Controller('center')
-@ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class CenterController {
   constructor(private readonly centerService: CenterService) { }
@@ -34,9 +34,9 @@ export class CenterController {
   async fetchMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
-    @Query() query: FetchStaffDto
+    @Query() query: FetchStaffDTO
   ) {
-    return await this.centerService.fetchStaffs(res, req.user, query)
+    await this.centerService.fetchStaffs(res, req.user, query)
   }
 
   @Patch('/manage/suspension/:staffId')
@@ -44,10 +44,10 @@ export class CenterController {
   async suspendMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
-    @Query() query: SuspendStaffDto,
+    @Query() query: SuspendStaffDTO,
     @Param('staffId') staffId: string,
   ) {
-    return await this.centerService.suspendStaff(res, staffId, req.user, query)
+    await this.centerService.suspendStaff(res, staffId, req.user, query)
   }
 
   @Post('/invite/medical-staff')
@@ -57,7 +57,7 @@ export class CenterController {
     @Res() res: Response,
     @Body() body: InviteMedicalStaffDTO,
   ) {
-    return await this.centerService.inviteMedicalStaff(res, req.user, body)
+    await this.centerService.inviteMedicalStaff(res, req.user, body)
   }
 
   @Post('/invite/center-admin')
@@ -67,13 +67,13 @@ export class CenterController {
     @Res() res: Response,
     @Body() body: InviteCenterAdminDTO,
   ) {
-    return await this.centerService.inviteCenterAdmin(res, req.user, body)
+    await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 
   @Role(Roles.centerAdmin, Roles.specialist)
   @Get('/analytics')
   async analytics(@Req() req: IRequest, @Res() res: Response) {
-    return await this.centerService.analytics(res, req.user)
+    await this.centerService.analytics(res, req.user)
   }
 
   @Get('/charts')
@@ -83,7 +83,7 @@ export class CenterController {
     @Res() res: Response,
     @Query() query: ChartDTO,
   ) {
-    return await this.centerService.charts(res, req.user, query)
+    await this.centerService.charts(res, req.user, query)
   }
 
   @Post('/patient')
@@ -121,7 +121,6 @@ export class CenterController {
   })
   @Post('/patient/:mrn/study')
   @Role(Roles.centerAdmin, Roles.specialist)
-  @UseInterceptors(AnyFilesInterceptor())
   async createPatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,

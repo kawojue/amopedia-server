@@ -9,7 +9,7 @@ import { StatusCodes } from 'enums/statusCodes'
 import {
     InviteCenterAdminDTO, InviteMedicalStaffDTO
 } from './dto/invite.dto'
-import { SuspendStaffDto } from './dto/auth.dto'
+import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import {
     titleText, toLowerCase, toUpperCase, transformMRN
@@ -18,7 +18,7 @@ import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import {
-    ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDto
+    ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
 import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
@@ -53,7 +53,7 @@ export class CenterService {
         {
             limit = 50, page = 1,
             role, search = '', sortBy
-        }: FetchStaffDto
+        }: FetchStaffDTO
     ) {
         try {
             limit = Number(limit)
@@ -109,7 +109,7 @@ export class CenterService {
         res: Response,
         staffId: string,
         { sub, centerId }: ExpressUser,
-        { action }: SuspendStaffDto,
+        { action }: SuspendStaffDTO,
     ) {
         try {
             const admin = await this.prisma.centerAdmin.findUnique({

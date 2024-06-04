@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import { titleText } from 'helpers/transformer'
-import { EmailDto, LoginDto } from 'src/auth/dto/login.dto'
+import { EmailDTO, LoginDTO } from 'src/auth/dto/login.dto'
 import { IsEnum, IsString, MaxLength } from 'class-validator'
 
 
-export class SignupDto extends LoginDto {
+export class SignupDTO extends LoginDTO {
     @ApiProperty({
         example: 'Raheem Kawojue',
     })
@@ -20,7 +20,7 @@ enum Role {
     specialist = "specialist"
 }
 
-export class InviteDto extends EmailDto {
+export class InviteDTO extends EmailDTO {
     @ApiProperty({
         example: 'Raheem Kawojue',
     })
