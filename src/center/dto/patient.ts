@@ -1,17 +1,18 @@
 import {
-    IsPhoneNumber, MaxLength, IsOptional,
-    IsDateString, IsEmail, IsEnum, IsString,
+    IsEmail, IsOptional, IsString,
+    IsPhoneNumber, IsEnum, MaxLength,
 } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
-import { toLowerCase } from 'helpers/transformer'
 import { Gender, MaritalStatus } from '@prisma/client'
+import { titleText, toLowerCase } from 'helpers/transformer'
 
 export class AddPatientDTO {
     @ApiProperty({
         example: 'John Doe'
     })
     @IsString()
+    @Transform(({ value }) => titleText(value))
     fullname: string
 
     @ApiProperty({
@@ -44,7 +45,6 @@ export class AddPatientDTO {
     @ApiProperty({
         example: new Date()
     })
-    @IsDateString()
     dob: string
 
     @ApiProperty({

@@ -1,8 +1,10 @@
+import { ObjectId } from 'mongodb'
 import { validateFile } from 'utils/file'
 import { Request, Response } from 'express'
 import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
+import { PlunkService } from 'lib/plunk.service'
 import { PrismaService } from 'lib/prisma.service'
 import { getIpAddress } from 'helpers/getIPAddress'
 import { EmailDTO, LoginDTO } from './dto/login.dto'
@@ -11,7 +13,6 @@ import { ChangePasswordDTO } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 import { OrganizationSignupDTO, PractitionerSignupDTO } from './dto/signup.dto'
 
 @Injectable()
@@ -19,6 +20,7 @@ export class AuthService {
     constructor(
         private readonly aws: AwsService,
         private readonly misc: MiscService,
+        private readonly plunk: PlunkService,
         private readonly prisma: PrismaService,
         private readonly response: ResponseService,
         private readonly encryption: EncryptionService,
@@ -32,10 +34,6 @@ export class AuthService {
         }: PractitionerSignupDTO
     ) {
         try {
-            email = toLowerCase(email)
-            fullname = titleText(fullname)
-            practiceNumber = toUpperCase(practiceNumber)
-
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
                     OR: [
@@ -78,9 +76,6 @@ export class AuthService {
         }: OrganizationSignupDTO
     ) {
         try {
-            email = toLowerCase(email)
-            password = await this.encryption.hashAsync(password)
-
             const isExist = await this.prisma.center.findFirst({
                 where: {
                     OR: [
@@ -94,29 +89,32 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Organization already exist")
             }
 
-            const center = await this.prisma.center.create({
-                data: {
-                    address, state, country, zip_code, phone,
-                    status: 'PENDING', ip: getIpAddress(req),
-                    email, centerName: organizationName, city,
-                }
-            })
+            const id = new ObjectId().toString()
 
-            if (center) {
-                await this.prisma.centerAdmin.create({
+            password = await this.encryption.hashAsync(password)
+
+            await this.prisma.$transaction([
+                this.prisma.center.create({
+                    data: {
+                        status: 'PENDING', ip: getIpAddress(req),
+                        email, centerName: organizationName, city,
+                        id, address, state, country, zip_code, phone,
+                    }
+                }),
+                this.prisma.centerAdmin.create({
                     data: {
                         fullname, email, phone,
                         password, superAdmin: true,
                         status: 'PENDING', role: 'centerAdmin',
-                        center: { connect: { id: center.id } },
+                        center: { connect: { id } },
                     }
                 })
-            }
+            ])
 
             // Todo: mailing
 
             this.response.sendSuccess(res, StatusCodes.Created, {
-                message: "You'll be notified when your organization is verified by our Admin"
+                message: "You'll be notified when your organization is verified by the board"
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
@@ -128,8 +126,6 @@ export class AuthService {
         { email, password }: LoginDTO
     ) {
         try {
-            email = toLowerCase(email)
-
             const user = await this.prisma.centerAdmin.findUnique({
                 where: { email },
                 include: { center: true }
@@ -186,8 +182,7 @@ export class AuthService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data,
-                access_token,
+                data, access_token,
                 message: "Login successful"
             })
         } catch (err) {
@@ -200,8 +195,6 @@ export class AuthService {
         { email }: EmailDTO
     ) {
         try {
-            email = toLowerCase(email)
-
             const select = {
                 id: true,
                 role: true,
@@ -249,7 +242,13 @@ export class AuthService {
                 }
             })
 
-            // TODO: Send the user their new password via email
+            res.on('finish', async () => {
+                await this.plunk.sendPlunkEmail({
+                    to: user.email,
+                    subject: 'Password Reset',
+                    body: `<h4>New Password: </h4> ${password}`
+                })
+            })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 message: "Your password has been reseted. Please check your email for the new password."

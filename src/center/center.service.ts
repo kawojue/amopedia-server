@@ -1,7 +1,4 @@
 import { Response } from 'express'
-import {
-    titleText, toLowerCase, transformMRN
-} from 'helpers/transformer'
 import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
 import { AwsService } from 'lib/aws.service'
@@ -13,6 +10,7 @@ import {
     InviteCenterAdminDTO, InviteMedicalStaffDTO
 } from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
+import { transformMRN } from 'helpers/transformer'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
@@ -373,9 +371,6 @@ export class CenterService {
         }: AddPatientDTO,
     ) {
         try {
-            email = toLowerCase(email)
-            fullname = titleText(email)
-
             const patient = await this.prisma.patient.findUnique({
                 where: {
                     centerId,
@@ -426,9 +421,6 @@ export class CenterService {
         }: AddPatientDTO,
     ) {
         try {
-            email = toLowerCase(email)
-            fullname = titleText(email)
-
             const patient = await this.prisma.patient.findUnique({
                 where: { mrn, centerId }
             })
@@ -452,7 +444,7 @@ export class CenterService {
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: updatedPatient,
-                message: "Message is has been updated"
+                message: "Patient has been updated"
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error updating patient record")
@@ -549,7 +541,7 @@ export class CenterService {
                 message: "Patient Study has been added"
             })
         } catch (err) {
-            this.misc.handleServerError(res, err, "Error creating patient study")
+            this.misc.handleServerError(res, err, "Error creating a patient study")
         }
     }
 

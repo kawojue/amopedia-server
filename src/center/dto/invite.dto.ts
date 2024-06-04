@@ -1,11 +1,11 @@
 import { Profession } from 'enums/base'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
-import { EmailDTO } from 'src/auth/dto/login.dto'
 import {
-    IsString, Matches, MaxLength, MinLength,
-    IsEnum, IsNotEmpty, IsOptional, IsPhoneNumber,
+    IsEnum, IsNotEmpty, IsOptional, MinLength,
+    IsString, Matches, MaxLength, IsPhoneNumber,
 } from 'class-validator'
+import { EmailDTO } from 'src/auth/dto/login.dto'
 import { titleText, toUpperCase } from 'helpers/transformer'
 
 export class InviteMedicalStaffDTO extends EmailDTO {

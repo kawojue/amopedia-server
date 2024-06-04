@@ -1,6 +1,6 @@
 import {
-    MaxLength, IsString, IsOptional,
-    Matches, IsEmail, IsPhoneNumber,
+    IsOptional, IsPhoneNumber,
+    MaxLength, IsString, IsEmail,
 } from 'class-validator'
 import { PasswordDTO } from './password.dto'
 import { Transform } from 'class-transformer'
@@ -13,6 +13,7 @@ export class OrganizationSignupDTO extends PasswordDTO {
     })
     @IsString()
     @MaxLength(100)
+    @Transform(({ value }) => toLowerCase(value))
     fullname: string
 
     @ApiProperty({
@@ -28,6 +29,7 @@ export class OrganizationSignupDTO extends PasswordDTO {
     @IsEmail({
         host_blacklist: ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'fastmail.com']
     }, { message: 'Only business email is required' })
+    @Transform(({ value }) => toLowerCase(value))
     email: string
 
     @ApiProperty({
@@ -64,7 +66,6 @@ export class OrganizationSignupDTO extends PasswordDTO {
         example: '106101'
     })
     @IsOptional()
-    @Matches(/^\d{5}(?:[-\s]\d{4})?$/, { message: 'Invalid zip code format' })
     zip_code: string
 
     @ApiProperty({
