@@ -129,13 +129,13 @@ export class AuthService {
             let user = await this.prisma.centerAdmin.findUnique({
             where: { email },
             include: { center: true }
-        })
+        }) as any
 
         if (!user) {
             user = await this.prisma.practitioner.findUnique({
                 where: { email },
                 include: { center: true }
-            })
+            }) as any
         }
 
             if (!user) {
@@ -210,13 +210,13 @@ export class AuthService {
             let user = await this.prisma.centerAdmin.findUnique({
             where: { email },
             select
-        })
+        }) as any
 
         if (!user) {
             user = await this.prisma.practitioner.findUnique({
                 where: { email },
                 select
-            })
+            }) as any
         }
 
             if (!user) {
