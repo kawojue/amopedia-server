@@ -2,10 +2,11 @@ import { Profession } from 'enums/base'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
 import { EmailDTO } from 'src/auth/dto/login.dto'
-import { titleText, toUpperCase } from 'helpers/transformer'
 import {
-    IsEnum, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength
+    IsString, Matches, MaxLength, MinLength,
+    IsEnum, IsNotEmpty, IsOptional, IsPhoneNumber,
 } from 'class-validator'
+import { titleText, toUpperCase } from 'helpers/transformer'
 
 export class InviteMedicalStaffDTO extends EmailDTO {
     @ApiProperty({
@@ -73,6 +74,15 @@ export class InviteMedicalStaffDTO extends EmailDTO {
     @MaxLength(50)
     @Transform(({ value }) => titleText(value))
     country: string
+
+    @ApiProperty({
+        example: 'Mypswd123'
+    })
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(6)
+    @MaxLength(32)
+    password: string
 }
 
 export class InviteCenterAdminDTO extends EmailDTO {
@@ -90,4 +100,13 @@ export class InviteCenterAdminDTO extends EmailDTO {
     @MaxLength(14)
     @IsPhoneNumber()
     phone: string
+
+    @ApiProperty({
+        example: 'Mypswd123'
+    })
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(6)
+    @MaxLength(32)
+    password: string
 }

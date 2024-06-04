@@ -1,4 +1,7 @@
 import { Response } from 'express'
+import {
+    titleText, toLowerCase, transformMRN
+} from 'helpers/transformer'
 import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
 import { AwsService } from 'lib/aws.service'
@@ -11,9 +14,6 @@ import {
 } from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
-import {
-    titleText, toLowerCase, toUpperCase, transformMRN
-} from 'helpers/transformer'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
@@ -162,16 +162,12 @@ export class CenterService {
         res: Response,
         { centerId }: ExpressUser,
         {
-            practiceNumber, profession,
-            zip_code, state, address, city,
-            country, email, fullname, phone,
+            password, practiceNumber, city,
+            profession, email, state, address,
+            country, zip_code, fullname, phone,
         }: InviteMedicalStaffDTO
     ) {
         try {
-            email = toLowerCase(email)
-            fullname = titleText(fullname)
-            practiceNumber = toUpperCase(practiceNumber)
-
             const isExists = await this.prisma.practitioner.findFirst({
                 where: {
                     centerId,
@@ -186,25 +182,21 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Email or practice number already exist")
             }
 
-            const pswd = await genPassword()
-            const password = await this.encryption.hashAsync(pswd)
+            const pswd = await this.encryption.hashAsync(password, 12)
 
-            const practitioner = await this.prisma.practitioner.create({
+            await this.prisma.practitioner.create({
                 data: {
+                    type: 'center', state, address,
                     center: { connect: { id: centerId } },
                     city, country, email, fullname, phone,
-                    type: 'center', zip_code, state, address,
-                    practiceNumber, status: 'ACTIVE', password,
-                    role: profession as Roles,
+                    zip_code, status: 'ACTIVE', password: pswd,
+                    role: profession as Roles, practiceNumber,
                 }
             })
 
-            if (practitioner) {
-                // TODO: mail practitioner the generated pswd
-            }
-
             this.response.sendSuccess(res, StatusCodes.OK, {
-                message: `A new ${profession} has been invited`
+                message: `A new ${profession} has been invited`,
+                data: { password }
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
@@ -214,12 +206,9 @@ export class CenterService {
     async inviteCenterAdmin(
         res: Response,
         { sub }: ExpressUser,
-        { email, fullname, phone }: InviteCenterAdminDTO
+        { email, fullname, phone, password }: InviteCenterAdminDTO
     ) {
         try {
-            email = toLowerCase(email)
-            fullname = titleText(fullname)
-
             const admin = await this.prisma.centerAdmin.findUnique({
                 where: { id: sub, superAdmin: true },
                 select: { center: true }
@@ -237,22 +226,18 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.Conflict, 'Existing admin')
             }
 
-            const pswd = await genPassword()
-            const password = await this.encryption.hashAsync(pswd, 12)
+            const pswd = await this.encryption.hashAsync(password, 12)
 
-            const centerAdmin = await this.prisma.centerAdmin.create({
+            await this.prisma.centerAdmin.create({
                 data: {
-                    email, fullname, phone, password,
+                    email, fullname, phone, password: pswd,
                     center: { connect: { id: admin.center.id } }
                 }
             })
 
-            if (centerAdmin) {
-                // TODO: mail center admin their pswd
-            }
-
             this.response.sendSuccess(res, StatusCodes.OK, {
-                message: "A new center admin has been invited"
+                message: "A new center admin has been invited",
+                data: { password }
             })
         } catch (err) {
             this.misc.handleServerError(res, err)

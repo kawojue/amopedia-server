@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import { titleText } from 'helpers/transformer'
 import { EmailDTO, LoginDTO } from 'src/auth/dto/login.dto'
-import { IsEnum, IsString, MaxLength } from 'class-validator'
+import { IsEnum, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator'
 
 
 export class SignupDTO extends LoginDTO {
@@ -34,4 +34,13 @@ export class InviteDTO extends EmailDTO {
     })
     @IsEnum(Role)
     role: Role
+
+    @ApiProperty({
+        example: 'Mypswd123'
+    })
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(6)
+    @MaxLength(32)
+    password: string
 }
