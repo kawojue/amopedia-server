@@ -126,13 +126,17 @@ export class AuthService {
         { email, password }: LoginDTO
     ) {
         try {
-            const user = await this.prisma.centerAdmin.findUnique({
-                where: { email },
-                include: { center: true }
-            }) || await this.prisma.practitioner.findUnique({
+            let user = await this.prisma.centerAdmin.findUnique({
+            where: { email },
+            include: { center: true }
+        })
+
+        if (!user) {
+            user = await this.prisma.practitioner.findUnique({
                 where: { email },
                 include: { center: true }
             })
+        }
 
             if (!user) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email or password')
@@ -203,13 +207,17 @@ export class AuthService {
                 center: { select: { status: true } }
             }
 
-            const user = await this.prisma.centerAdmin.findUnique({
-                where: { email },
-                select
-            }) || await this.prisma.practitioner.findUnique({
+            let user = await this.prisma.centerAdmin.findUnique({
+            where: { email },
+            select
+        })
+
+        if (!user) {
+            user = await this.prisma.practitioner.findUnique({
                 where: { email },
                 select
             })
+        }
 
             if (!user) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email')
