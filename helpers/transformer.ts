@@ -20,3 +20,59 @@ export const transformMRN = (patientCount: number) => {
     const paddedMRN = String(patientCount).padStart(maxMRNLength, "0")
     return paddedMRN
 }
+
+export const getFileExtension = (file: Express.Multer.File | string): string | undefined => {
+    let mimetype: string | undefined
+
+    if (typeof file === "object" && file.mimetype) {
+        mimetype = file.mimetype
+    } else if (typeof file === "string") {
+        mimetype = file
+    }
+
+    let extension: string | undefined
+
+    switch (mimetype) {
+        case 'application/dicom':
+            extension = 'dcm'
+            break
+        case 'video/mp4':
+            extension = 'mp4'
+            break
+        case 'video/webm':
+            extension = 'webm'
+            break
+        case 'video/avi':
+            extension = 'avi'
+            break
+        case 'image/png':
+            extension = 'png'
+            break
+        case 'image/jpeg':
+            extension = 'jpg'
+            break
+        case 'audio/mp3':
+            extension = 'mp3'
+            break
+        case 'audio/wav':
+            extension = 'wav'
+            break
+        case 'audio/aac':
+            extension = 'aac'
+            break
+        case 'audio/ogg':
+            extension = 'ogg'
+            break
+        case 'application/pdf':
+            extension = 'pdf'
+            break
+        case 'application/msword':
+            extension = 'doc'
+            break
+        default:
+            console.warn(`Unsupported MIME type: ${mimetype}`)
+            break
+    }
+
+    return extension
+}

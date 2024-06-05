@@ -1,4 +1,5 @@
 import { StatusCodes } from 'enums/statusCodes'
+import { getFileExtension } from 'helpers/transformer'
 
 export const validateFile = (
     file: Express.Multer.File,
@@ -11,7 +12,7 @@ export const validateFile = (
         }
     }
 
-    if (!extensions.includes(file.originalname.split('.').pop())) {
+    if (!extensions.includes(getFileExtension(file))) {
         return {
             status: StatusCodes.UnsupportedContent,
             message: `Extension is not allowed - ${file.originalname}`,

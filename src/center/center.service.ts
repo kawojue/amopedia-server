@@ -507,7 +507,7 @@ export class CenterService {
                             return this.response.sendError(res, re.status, re.message)
                         }
 
-                        const path = `${centerId}/${mrn}/${genFilename(re.file.originalname)}`
+                        const path = `${centerId}/${mrn}/${genFilename(re.file)}`
                         await this.aws.uploadS3(file, path)
 
                         return {
@@ -584,7 +584,7 @@ export class CenterService {
                             return this.response.sendError(res, re.status, re.message)
                         }
 
-                        const path = `${centerId}/${mrn}/${genFilename(re.file.originalname)}`
+                        const path = `${centerId}/${mrn}/${genFilename(re.file)}`
                         await this.aws.uploadS3(file, path)
 
                         return {
@@ -1016,7 +1016,7 @@ export class CenterService {
                             return this.response.sendError(res, re.status, re.message)
                         }
 
-                        const path = `${centerId}/${studyId}/${genFilename(re.file.originalname)}`
+                        const path = `${centerId}/${studyId}/${genFilename(re.file)}`
                         await this.aws.uploadS3(file, path)
 
                         return {

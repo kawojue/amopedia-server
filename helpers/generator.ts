@@ -1,10 +1,12 @@
-export const genFilename = (orginalname: string) => {
-    const [filename, extension] = orginalname.split('.')
+import { getFileExtension } from './transformer'
+
+export const genFilename = (file: Express.Multer.File) => {
+    const [filename] = file.originalname.split('.')
 
     return `${filename}_${new Date()
         .toDateString()
         .split(" ")
-        .join('-')}_${Math.floor(new Date().getTime() / 1000)}.${extension}`
+        .join('-')}_${Math.floor(new Date().getTime() / 1000)}.${getFileExtension(file.mimetype)}`
 }
 
 export const genPassword = async () => {

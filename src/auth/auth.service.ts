@@ -320,7 +320,7 @@ export class AuthService {
                 return this.response.sendError(res, re.status, re.message)
             }
 
-            const path = `profile-photos/${genFilename(re.file.originalname)}`
+            const path = `profile-photos/${genFilename(re.file)}`
             try {
                 await this.aws.uploadS3(re.file, path)
 
