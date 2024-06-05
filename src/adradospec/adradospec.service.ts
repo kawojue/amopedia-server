@@ -286,10 +286,16 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Facility not found')
             }
 
-            await this.prisma.center.update({
-                where: { id: centerId },
-                data: { status }
-            })
+            await this.prisma.$transaction([
+                this.prisma.center.update({
+                    where: { id: centerId },
+                    data: { status }
+                }),
+                this.prisma.centerAdmin.update({
+                    where: { centerId, superAdmin: true },
+                    data: { status }
+                })
+            ])
 
             // TODO: mail about status change
 
