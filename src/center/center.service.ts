@@ -378,6 +378,7 @@ export class CenterService {
                     OR: [
                         { email: email },
                         { phone: phone },
+                        { nin: nin },
                     ],
                 },
             })
