@@ -372,7 +372,7 @@ export class CenterService {
         }: AddPatientDTO,
     ) {
         try {
-            const patient = await this.prisma.patient.findUnique({
+            const patient = await this.prisma.patient.findFirst({
                 where: {
                     centerId,
                     OR: [
