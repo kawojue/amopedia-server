@@ -17,7 +17,7 @@ export class SortByDTO {
 
 export class SearchDTO extends SortByDTO {
     @ApiProperty({
-        example: 'Raheem'
+        example: ' '
     })
     @IsString()
     @IsOptional()

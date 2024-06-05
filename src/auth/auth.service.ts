@@ -127,19 +127,29 @@ export class AuthService {
     ) {
         try {
             let user = await this.prisma.centerAdmin.findUnique({
-            where: { email },
-            include: { center: true }
-        }) as any
-
-        if (!user) {
-            user = await this.prisma.practitioner.findUnique({
                 where: { email },
                 include: { center: true }
             }) as any
-        }
+
+            if (!user) {
+                user = await this.prisma.practitioner.findUnique({
+                    where: { email },
+                    include: { center: true }
+                })
+            }
 
             if (!user) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email or password')
+            }
+
+            if (user?.center) {
+                if (user.center.status === "PENDING") {
+                    return this.response.sendError(res, StatusCodes.Unauthorized, 'Your organization is pending verification')
+                }
+
+                if (user.center.status === "SUSPENDED") {
+                    return this.response.sendError(res, StatusCodes.Forbidden, 'Your organization has been suspended')
+                }
             }
 
             if (user.status === "SUSPENDED") {
@@ -148,16 +158,6 @@ export class AuthService {
 
             if (user.status === "PENDING") {
                 return this.response.sendError(res, StatusCodes.Unauthorized, 'Your account is pending verification')
-            }
-
-            if (user.center) {
-                if (user.center.status === "PENDING") {
-                    return this.response.sendError(res, StatusCodes.Unauthorized, 'Your organization is pending verification')
-                }
-
-                if (user.center.status === "SUSPENDED") {
-                    return this.response.sendError(res, StatusCodes.Forbidden, 'Your organization has been suspended')
-                }
             }
 
             const isMatch = await this.encryption.compareAsync(password, user.password)
@@ -208,27 +208,19 @@ export class AuthService {
             }
 
             let user = await this.prisma.centerAdmin.findUnique({
-            where: { email },
-            select
-        }) as any
-
-        if (!user) {
-            user = await this.prisma.practitioner.findUnique({
                 where: { email },
                 select
             }) as any
-        }
+
+            if (!user) {
+                user = await this.prisma.practitioner.findUnique({
+                    where: { email },
+                    select
+                })
+            }
 
             if (!user) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email')
-            }
-
-            if (user.status === "SUSPENDED") {
-                return this.response.sendError(res, StatusCodes.Unauthorized, "Your account has been suspended")
-            }
-
-            if (user.status === "PENDING") {
-                return this.response.sendError(res, StatusCodes.Unauthorized, 'Your account is pending verification')
             }
 
             if (user?.center) {
@@ -239,6 +231,14 @@ export class AuthService {
                 if (user.center.status === "SUSPENDED") {
                     return this.response.sendError(res, StatusCodes.Forbidden, 'Your organization has been suspended')
                 }
+            }
+
+            if (user.status === "SUSPENDED") {
+                return this.response.sendError(res, StatusCodes.Unauthorized, "Your account has been suspended")
+            }
+
+            if (user.status === "PENDING") {
+                return this.response.sendError(res, StatusCodes.Unauthorized, 'Your account is pending verification')
             }
 
             const password = await genPassword()

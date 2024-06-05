@@ -54,8 +54,9 @@ export class CenterService {
         }: FetchStaffDTO
     ) {
         try {
-            limit = Number(limit)
             page = Number(page)
+            limit = Number(limit)
+            search = search?.trim() ?? ''
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
             }
