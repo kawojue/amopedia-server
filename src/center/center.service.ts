@@ -74,7 +74,7 @@ export class CenterService {
 
             const center = admin.center
 
-            const data = await (this.prisma[role === "centerAdmin" ? 'centerAdmin' : 'centerPractitioner'] as any).findMany({
+            const data = await (this.prisma[role === "centerAdmin" ? 'centerAdmin' : 'practitioner'] as any).findMany({
                 where: {
                     role,
                     centerId: center.id,
