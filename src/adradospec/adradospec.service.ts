@@ -291,7 +291,7 @@ export class AdradospecService {
                     where: { id: centerId },
                     data: { status }
                 }),
-                this.prisma.centerAdmin.update({
+                this.prisma.centerAdmin.updateMany({
                     where: { centerId, superAdmin: true },
                     data: { status }
                 })

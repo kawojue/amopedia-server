@@ -374,12 +374,12 @@ export class CenterService {
         try {
             const patient = await this.prisma.patient.findFirst({
                 where: {
-                    centerId,
+                    centerId: centerId,
                     OR: [
-                        { email: { equals: email, mode: 'insensitive' } },
-                        { phone: { equals: phone, mode: 'insensitive' } },
-                    ]
-                }
+                        { email: email },
+                        { phone: phone },
+                    ],
+                },
             })
 
             if (patient) {

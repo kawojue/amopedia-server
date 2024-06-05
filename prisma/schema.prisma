@@ -49,7 +49,7 @@ model CenterAdmin {
     phone      String   @unique
     email      String   @unique
     center     Center   @relation(fields: [centerId], references: [id])
-    centerId   String   @unique @db.ObjectId
+    centerId   String   @db.ObjectId
     role       Roles    @default(centerAdmin)
     status     Status   @default(ACTIVE)
     createdAt  DateTime @default(now())
@@ -77,14 +77,14 @@ model Practitioner {
     role           Roles
     patientStudies PatientStudy[]
     center         Center?        @relation(fields: [centerId], references: [id])
-    centerId       String?        @unique @db.ObjectId
+    centerId       String?        @db.ObjectId
 }
 
 model Patient {
     id            String         @id @default(auto()) @map("_id") @db.ObjectId
     mrn           String         @unique
     fullname      String
-    nin           String
+    nin           String?        @unique
     phone         String         @unique
     email         String         @unique
     dob           DateTime
@@ -94,7 +94,7 @@ model Patient {
     zip_code      String?
     status        PatientStatus  @default(New)
     center        Center         @relation(fields: [centerId], references: [id])
-    centerId      String         @unique @db.ObjectId
+    centerId      String         @db.ObjectId
     caseStudies   PatientStudy[]
     createdAt     DateTime       @default(now())
     updatedAt     DateTime       @updatedAt
@@ -128,7 +128,7 @@ model Trash {
     id       String @id @default(auto()) @map("_id") @db.ObjectId
     files    File[]
     center   Center @relation(fields: [centerId], references: [id])
-    centerId String @unique @db.ObjectId
+    centerId String @db.ObjectId
 }
 
 enum Status {
