@@ -10,7 +10,7 @@ export const toLowerCase = (text: string) => text.toLowerCase().trim()
 export const toUpperCase = (text: string) => text.toUpperCase().trim()
 
 export const transformMRN = (patientCount: number) => {
-    const maxMRNLength = 5
+    const maxMRNLength = 7
     const maxPatientCount = Math.pow(10, maxMRNLength) - 1
 
     if (patientCount > maxPatientCount) {
