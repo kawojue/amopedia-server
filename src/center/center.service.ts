@@ -551,7 +551,7 @@ export class CenterService {
 
             const studyId = await genPassword()
 
-            const data = await this.prisma.patientStudy.create({
+            await this.prisma.patientStudy.create({
                 data: {
                     paperwork, status: 'Unassigned',
                     study_id: studyId.toUpperCase(),
@@ -563,7 +563,7 @@ export class CenterService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data,
+                data: { studyId },
                 message: "Patient Study has been added"
             })
         } catch (err) {
@@ -661,7 +661,7 @@ export class CenterService {
                 }
             }
 
-            const data = await this.prisma.patientStudy.update({
+            await this.prisma.patientStudy.update({
                 where: { study_id: studyId },
                 data: {
                     paperwork,
@@ -672,7 +672,7 @@ export class CenterService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data,
+                data: { studyId },
                 message: "Patient study has been updated"
             })
         } catch (err) {
