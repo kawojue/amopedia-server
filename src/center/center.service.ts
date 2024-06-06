@@ -57,6 +57,7 @@ export class CenterService {
             page = Number(page)
             limit = Number(limit)
             search = search?.trim() ?? ''
+
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
             }
@@ -72,18 +73,18 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Center Admin or Center not found')
             }
 
-            const center = admin.center
+            const whereCondition = {
+                role,
+                centerId: admin.center.id,
+                OR: [
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                    { fullname: { contains: search, mode: 'insensitive' } },
+                ]
+            }
 
             const data = await (this.prisma[role === "centerAdmin" ? 'centerAdmin' : 'practitioner'] as any).findMany({
-                where: {
-                    role,
-                    centerId: center.id,
-                    OR: [
-                        { email: { contains: search, mode: 'insensitive' } },
-                        { phone: { contains: search, mode: 'insensitive' } },
-                        { fullname: { contains: search, mode: 'insensitive' } },
-                    ]
-                },
+                where: whereCondition,
                 take: limit,
                 skip: offset,
                 select: {
@@ -98,7 +99,24 @@ export class CenterService {
                 orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
             })
 
-            this.response.sendSuccess(res, StatusCodes.OK, { data })
+            const total = await (this.prisma[role === "centerAdmin" ? 'centerAdmin' : 'practitioner'] as any).count({
+                where: whereCondition,
+            })
+
+            const totalPages = Math.ceil(total / limit)
+            const hasNext = page < totalPages
+            const hasPrev = page > 1
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data,
+                metadata: {
+                    total,
+                    totalPages,
+                    hasNext,
+                    hasPrev,
+                    currentPage: page,
+                }
+            })
         } catch (err) {
             this.misc.handleServerError(res, err)
         }
