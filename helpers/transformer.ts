@@ -49,6 +49,7 @@ export const getFileExtension = (file: Express.Multer.File | string): string | u
             extension = 'png'
             break
         case 'image/jpeg':
+        case 'image/jpg':
             extension = 'jpg'
             break
         case 'audio/mp3':
