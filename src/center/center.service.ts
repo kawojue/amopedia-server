@@ -911,7 +911,7 @@ export class CenterService {
             const hasPrev = page > 1
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { patientStudies, total },
+                data: patientStudies,
                 metadata: {
                     total,
                     totalPages,
