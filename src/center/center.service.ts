@@ -881,6 +881,8 @@ export class CenterService {
                 { body_part: { contains: search, mode: 'insensitive' } },
                 { access_code: { contains: search, mode: 'insensitive' } },
                 { clinical_info: { contains: search, mode: 'insensitive' } },
+                { patient: { mrn: { contains: search, mode: 'insensitive' } } },
+                { patient: { fullname: { contains: search, mode: 'insensitive' } } },
             ]
 
             const commonWhereConditions = {
