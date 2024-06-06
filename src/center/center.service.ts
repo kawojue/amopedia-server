@@ -1178,14 +1178,18 @@ export class CenterService {
             }[] = []
 
             for (const label of labels) {
+                const commonWhere: {
+                    centerId: string
+                    status: $Enums.StudyStatus
+                } = {
+                    centerId,
+                    status: label === 'All' ? undefined : label as StudyStatus
+                }
+
                 const count = await this.prisma.patientStudy.count({
-                    where: role === "centerAdmin" ? {
-                        centerId,
-                        status: label === 'All' ? undefined : label as StudyStatus
-                    } : {
-                        centerId,
+                    where: role === "centerAdmin" ? commonWhere : {
+                        ...commonWhere,
                         practitionerId: sub,
-                        status: label === 'All' ? undefined : label as StudyStatus
                     }
                 })
 
