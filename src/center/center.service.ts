@@ -502,7 +502,11 @@ export class CenterService {
     async createPatientStudy(
         res: Response,
         mrn: string,
-        body: PatientStudyDTO,
+        {
+            access_code, body_part, cpt_code,
+            clinical_info, description, procedure,
+            priority, reporting_status, site, modality,
+        }: PatientStudyDTO,
         { centerId }: ExpressUser,
         files: Array<Express.Multer.File>,
     ) {
@@ -549,10 +553,12 @@ export class CenterService {
 
             await this.prisma.patientStudy.create({
                 data: {
-                    ...body, paperwork,
-                    status: 'Unassigned',
+                    paperwork, status: 'Unassigned',
                     study_id: studyId.toUpperCase(),
-                    patient: { connect: { id: patient.id } }
+                    access_code, body_part, cpt_code,
+                    clinical_info, description, procedure,
+                    patient: { connect: { id: patient.id } },
+                    priority, reporting_status, site, modality,
                 }
             })
 
@@ -568,7 +574,11 @@ export class CenterService {
     async editPatientStudy(
         res: Response,
         studyId: string,
-        body: PatientStudyDTO,
+        {
+            access_code, body_part, cpt_code,
+            clinical_info, description, procedure,
+            priority, reporting_status, site, modality,
+        }: PatientStudyDTO,
         { centerId }: ExpressUser,
         files: Array<Express.Multer.File>,
     ) {
@@ -655,7 +665,9 @@ export class CenterService {
                 where: { study_id: studyId },
                 data: {
                     paperwork,
-                    ...body,
+                    access_code, body_part, cpt_code,
+                    clinical_info, description, procedure,
+                    priority, reporting_status, site, modality,
                 }
             })
 
@@ -994,7 +1006,10 @@ export class CenterService {
         try {
             const patient = await this.prisma.patient.findUnique({
                 where: { mrn, centerId },
-                select: { id: true, fullname: true, mrn: true, status: true },
+                select: {
+                    mrn: true, status: true,
+                    id: true, fullname: true,
+                },
             })
 
             if (!patient) {
@@ -1002,7 +1017,7 @@ export class CenterService {
             }
 
             if (patient.status === "Archived") {
-                return this.response.sendError(res, StatusCodes.Forbidden, "Unarchive patient before assigning")
+                return this.response.sendError(res, StatusCodes.Forbidden, "Unarchive the patient before assigning")
             }
 
             const study = await this.prisma.patientStudy.findUnique({
@@ -1106,7 +1121,7 @@ export class CenterService {
             if (files?.length) {
                 try {
                     const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 50 << 20, '.dcm')
+                        const re = validateFile(file, 50 << 20, 'dcm')
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
