@@ -128,6 +128,7 @@ export class CenterController {
     summary: 'The formdata key should be paperworks'
   })
   @Post('/patient/:mrn/study')
+  @UseInterceptors(AnyFilesInterceptor())
   @Role(Roles.centerAdmin)
   async createPatientStudy(
     @Req() req: IRequest,
@@ -137,6 +138,17 @@ export class CenterController {
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
     await this.centerService.createPatientStudy(res, mrn, body, req.user, files || [])
+  }
+
+
+  @Get('/patient/:mrn/study')
+  @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
+  async fetchPatientStudies(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+  ) {
+    await this.centerService.fetchPatientStudies(mrn, res, req.user)
   }
 
   @Get('/patient/:mrn/study/:studyId')
@@ -191,12 +203,12 @@ export class CenterController {
 
   @Get('/reports')
   @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
-  async fetchPatientStudies(
+  async fetchAllPatientStudies(
     @Req() req: IRequest,
     @Res() res: Response,
     @Query() query: FetchPatientStudyDTO
   ) {
-    await this.centerService.fetchPatientStudies(res, req.user, query)
+    await this.centerService.fetchAllPatientStudies(res, req.user, query)
   }
 
   @ApiOperation({

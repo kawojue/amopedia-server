@@ -853,7 +853,7 @@ export class CenterService {
         return { patients, totalCount }
     }
 
-    async fetchPatientStudies(
+    async fetchAllPatientStudies(
         res: Response,
         { sub, role }: ExpressUser,
         {
@@ -991,6 +991,29 @@ export class CenterService {
                 OR: searchFilter,
             },
         })
+    }
+
+    async fetchPatientStudies(
+        mrn: string,
+        res: Response,
+        { sub, role, centerId }: ExpressUser,
+    ) {
+        try {
+            const studies = await this.prisma.patientStudy.findMany({
+                where: role === "centerAdmin" ? {
+                    centerId,
+                    patient: { mrn }
+                } : {
+                    centerId,
+                    patient: { mrn },
+                    practitionerId: sub,
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: studies })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
     }
 
     async designatePatientStudy(
