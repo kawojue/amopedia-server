@@ -1099,7 +1099,17 @@ export class CenterService {
                 where: {
                     study_id: studyId,
                     patientId: patient.id,
-                }
+                },
+                include: {
+                   patient: {
+                    select: {
+                        mrn: true,
+                        dob: true,
+                        gender: true,
+                        fullname: true,
+                    },
+                },
+            },
             })
 
             if (!study) {
