@@ -57,12 +57,14 @@ export class FetchPatientStudyDTO extends FetchSPDTO {
     @ApiProperty({
         enum: Modality
     })
+    @IsOptional()
     @IsEnum(Modality)
     modality: Modality
 
     @ApiProperty({
         enum: Priority
     })
+    @IsOptional()
     @IsEnum(Priority)
     priority: Priority
 }
