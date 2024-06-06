@@ -878,8 +878,8 @@ export class CenterService {
 
             const searchFilter = [
                 { body_part: { contains: search, mode: 'insensitive' } },
+                { access_code: { contains: search, mode: 'insensitive' } },
                 { clinical_info: { contains: search, mode: 'insensitive' } },
-                { accession_code: { contains: search, mode: 'insensitive' } },
             ]
 
             const commonWhereConditions = {
