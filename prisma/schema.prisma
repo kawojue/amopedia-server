@@ -161,6 +161,7 @@ enum StudyStatus {
 enum Priority {
     Medium
     Urgent
+    Routine
     Extreme
     Critical
 }
