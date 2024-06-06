@@ -533,8 +533,8 @@ export class CenterService {
                         await this.aws.uploadS3(file, path)
 
                         return {
-                            path,
                             type: re.file.mimetype,
+                            path, size: re.file.size,
                             url: this.aws.getS3(path)
                         }
                     }))
@@ -616,8 +616,8 @@ export class CenterService {
                         await this.aws.uploadS3(file, path)
 
                         return {
-                            path,
                             type: re.file.mimetype,
+                            path, size: re.file.size,
                             url: this.aws.getS3(path)
                         }
                     }))
@@ -643,6 +643,7 @@ export class CenterService {
 
                             movedPaperwork.push({
                                 url,
+                                size: paperwork.size,
                                 type: paperwork.type,
                                 path: destinationPath,
                             })

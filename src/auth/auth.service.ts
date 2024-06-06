@@ -339,6 +339,7 @@ export class AuthService {
                 data: {
                     avatar: {
                         path, url,
+                        size: re.file.size,
                         type: re.file.mimetype,
                     }
                 }

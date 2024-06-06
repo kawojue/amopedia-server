@@ -112,7 +112,7 @@ model PatientStudy {
     clinical_info    String?
     site             String?
     reporting_status StudyStatus?
-    access_code   String?       @unique
+    access_code      String?       @unique
     paperwork        File[]
     dicoms           File[]
     status           StudyStatus   @default(Unassigned)
@@ -122,6 +122,8 @@ model PatientStudy {
     practitionerId   String?       @db.ObjectId
     patient          Patient       @relation(fields: [patientId], references: [id])
     patientId        String        @db.ObjectId
+
+    @@index([priority, modality, study_id, body_part, clinical_info, access_code, description])
 }
 
 model Trash {
@@ -177,6 +179,7 @@ enum PracType {
 
 type File {
     idx  String? @default(uuid())
+    size Float?
     url  String
     path String
     type String?

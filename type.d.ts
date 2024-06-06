@@ -25,6 +25,7 @@ interface IFile {
     url: string
     path: string
     type: string
+    size: number
 }
 
 interface ILogin {
