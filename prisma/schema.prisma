@@ -112,7 +112,7 @@ model PatientStudy {
     clinical_info    String?
     site             String?
     reporting_status StudyStatus?
-    accession_code   String?       @unique
+    access_code   String?       @unique
     paperwork        File[]
     dicoms           File[]
     status           StudyStatus   @default(Unassigned)
