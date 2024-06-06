@@ -1171,21 +1171,25 @@ export class CenterService {
         { sub, centerId, role }: ExpressUser
     ) {
         try {
-            const statuses: StudyStatus[] = ['Assigned', 'Closed', 'Opened', 'Unassigned']
+            const labels = ['All', 'Assigned', 'Closed', 'Opened', 'Unassigned']
             let data: {
-                status: StudyStatus
+                label: string
                 count: number
             }[] = []
 
-            for (const status of statuses) {
+            for (const label of labels) {
                 const count = await this.prisma.patientStudy.count({
-                    where: role === "centerAdmin" ? { centerId, status } : {
-                        centerId, status,
-                        practitionerId: sub
+                    where: role === "centerAdmin" ? {
+                        centerId,
+                        status: label === 'All' ? undefined : label as StudyStatus
+                    } : {
+                        centerId,
+                        practitionerId: sub,
+                        status: label === 'All' ? undefined : label as StudyStatus
                     }
                 })
 
-                data.push({ status, count })
+                data.push({ label, count })
             }
 
             this.response.sendSuccess(res, StatusCodes.OK, { data })
