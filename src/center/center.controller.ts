@@ -30,7 +30,7 @@ export class CenterController {
   constructor(private readonly centerService: CenterService) { }
 
   @Get('/fetch/staffs')
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async fetchMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -70,14 +70,14 @@ export class CenterController {
     await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   @Get('/analytics')
   async analytics(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.analytics(res, req.user)
   }
 
   @Get('/charts')
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async charts(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -87,7 +87,7 @@ export class CenterController {
   }
 
   @Post('/patient')
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async addPatient(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -97,7 +97,7 @@ export class CenterController {
   }
 
   @Put('/patient/:mrn/edit')
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async editPatient(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -120,7 +120,7 @@ export class CenterController {
     summary: 'The formdata key should be paperworks'
   })
   @Post('/patient/:mrn/study')
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async createPatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -132,6 +132,7 @@ export class CenterController {
   }
 
   @Get('/patient/:mrn/study/:studyId')
+  @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async getPatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -146,7 +147,7 @@ export class CenterController {
   })
   @Put('/patient/:mrn/study/:studyId/edit')
   @UseInterceptors(AnyFilesInterceptor())
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async editPatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -158,7 +159,7 @@ export class CenterController {
   }
 
   @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
-  @Role(Roles.specialist, Roles.centerAdmin)
+  @Role(Roles.centerAdmin)
   async designatePatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -171,6 +172,7 @@ export class CenterController {
   }
 
   @Get('/patients')
+  @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async fetchPatients(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -180,6 +182,7 @@ export class CenterController {
   }
 
   @Get('/reports')
+  @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async fetchPatientStudies(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -193,7 +196,7 @@ export class CenterController {
   })
   @Post('/dicoms/:studyId')
   @UseInterceptors(AnyFilesInterceptor())
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async uploadDicomFiles(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -203,7 +206,7 @@ export class CenterController {
     await this.centerService.uploadDicomFiles(res, studyId, req.user, files)
   }
 
-  @Role(Roles.centerAdmin, Roles.specialist)
+  @Role(Roles.centerAdmin)
   async bin(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.bin(res, req.user)
   }

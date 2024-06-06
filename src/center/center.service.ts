@@ -662,17 +662,42 @@ export class CenterService {
         try {
             page = Number(page)
             limit = Number(limit)
+            search = search?.trim() ?? ''
+
+            if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
+                return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
+            }
 
             let patients = []
+            let totalCount = 0
+
             if (role === "radiologist" || role === "doctor") {
                 const practitioner = await this.getPractitioner(sub)
                 if (practitioner) {
-                    patients = await this.fetchPatientsByPractitioner(practitioner.id, status, sortBy, search, startDate, endDate, limit, page)
+                    const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchPatientsByPractitioner(practitioner.id, status, sortBy, search, startDate, endDate, limit, page)
+                    patients = fetchedPatients
+                    totalCount = fetchedTotalCount
                 }
             } else {
-                patients = await this.fetchAllPatients(status, sortBy, search, startDate, endDate, limit, page)
+                const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchAllPatients(status, sortBy, search, startDate, endDate, limit, page)
+                patients = fetchedPatients
+                totalCount = fetchedTotalCount
             }
-            this.response.sendSuccess(res, StatusCodes.OK, { data: patients })
+
+            const totalPages = Math.ceil(totalCount / limit)
+            const hasNext = page < totalPages
+            const hasPrev = page > 1
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: patients,
+                metadata: {
+                    totalCount,
+                    totalPages,
+                    hasNext,
+                    hasPrev,
+                    currentPage: page,
+                }
+            })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error fetching patients")
         }
@@ -696,6 +721,21 @@ export class CenterService {
 
         const patientIdsSet = new Set(patientStudies.map(ps => ps.patientId))
         const patientIds = Array.from(patientIdsSet)
+
+        const totalCount = await this.prisma.patient.count({
+            where: {
+                id: { in: patientIds },
+                ...status ? { status } : {},
+                OR: [
+                    { fullname: { contains: search, mode: 'insensitive' } },
+                    { mrn: { contains: search, mode: 'insensitive' } },
+                    { nin: { contains: search, mode: 'insensitive' } },
+                    { address: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                ],
+                createdAt: dateFilter
+            }
+        })
 
         const patients = await this.prisma.patient.findMany({
             where: {
@@ -725,7 +765,7 @@ export class CenterService {
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
 
-        return patients
+        return { patients, totalCount }
     }
 
     private async fetchAllPatients(status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
@@ -735,6 +775,20 @@ export class CenterService {
             gte: startDate !== '' ? new Date(startDate) : new Date(0),
             lte: endDate !== '' ? new Date(endDate) : new Date(),
         }
+
+        const totalCount = await this.prisma.patient.count({
+            where: {
+                ...status ? { status } : {},
+                OR: [
+                    { fullname: { contains: search, mode: 'insensitive' } },
+                    { mrn: { contains: search, mode: 'insensitive' } },
+                    { nin: { contains: search, mode: 'insensitive' } },
+                    { address: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                ],
+                createdAt: dateFilter,
+            }
+        })
 
         const patients = await this.prisma.patient.findMany({
             where: {
@@ -763,9 +817,8 @@ export class CenterService {
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
 
-        return patients
+        return { patients, totalCount }
     }
-
 
     async fetchPatientStudies(
         res: Response,
@@ -778,7 +831,13 @@ export class CenterService {
     ) {
         try {
             limit = Number(limit)
+            search = search?.trim() ?? ''
             const offset = (Number(page) - 1) * limit
+
+            if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
+                return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
+            }
+
             let total = 0
             let patientStudies = []
 
@@ -803,13 +862,26 @@ export class CenterService {
                 const practitionerId = practitioner.id
 
                 patientStudies = await this.fetchStudiesByPractitioner(practitionerId, commonWhereConditions, searchFilter, sortBy, limit, offset)
-                total = await this.getTotalCountByPractitioner(practitionerId, commonWhereConditions)
+                total = await this.getTotalCountByPractitioner(practitionerId, commonWhereConditions, searchFilter)
             } else {
                 patientStudies = await this.fetchAllStudies(commonWhereConditions, searchFilter, sortBy, limit, offset)
-                total = await this.getTotalCount(commonWhereConditions)
+                total = await this.getTotalCount(commonWhereConditions, searchFilter)
             }
 
-            this.response.sendSuccess(res, StatusCodes.OK, { data: { patientStudies, total } })
+            const totalPages = Math.ceil(total / limit)
+            const hasNext = page < totalPages
+            const hasPrev = page > 1
+
+            this.response.sendSuccess(res, StatusCodes.OK, {
+                data: { patientStudies, total },
+                metadata: {
+                    total,
+                    totalPages,
+                    hasNext,
+                    hasPrev,
+                    currentPage: page,
+                }
+            })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error fetching reports")
         }
@@ -847,11 +919,12 @@ export class CenterService {
         })
     }
 
-    private async getTotalCountByPractitioner(practitionerId: string, commonWhereConditions: any) {
+    private async getTotalCountByPractitioner(practitionerId: string, commonWhereConditions: any, searchFilter: any[]) {
         return await this.prisma.patientStudy.count({
             where: {
                 practitionerId,
                 ...commonWhereConditions,
+                OR: searchFilter,
             },
         })
     }
@@ -883,8 +956,13 @@ export class CenterService {
         })
     }
 
-    private async getTotalCount(commonWhereConditions: any) {
-        return await this.prisma.patientStudy.count({ where: commonWhereConditions })
+    private async getTotalCount(commonWhereConditions: any, searchFilter: any[]) {
+        return await this.prisma.patientStudy.count({
+            where: {
+                ...commonWhereConditions,
+                OR: searchFilter,
+            },
+        })
     }
 
     async designatePatientStudy(

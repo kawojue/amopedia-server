@@ -198,9 +198,6 @@ export class AdradospecService {
 
             const offset = (page - 1) * limit
 
-            let total: number
-            let centers: Center[]
-
             const commonWhere = {
                 OR: [
                     { centerName: { contains: search, mode: 'insensitive' } },
@@ -209,36 +206,36 @@ export class AdradospecService {
                 createdAt: {
                     gte: startDate !== '' ? new Date(startDate) : new Date(0),
                     lte: endDate !== '' ? new Date(endDate) : new Date(),
-                }
+                },
+                ...(status ? { status } : {}),
             }
 
-            if (!status) {
-                centers = await this.prisma.center.findMany({
-                    // @ts-ignore
-                    where: commonWhere,
-                    take: limit,
-                    skip: offset,
-                    orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
-                })
+            const centers = await this.prisma.center.findMany({
+                // @ts-ignore
+                where: commonWhere,
+                take: limit,
+                skip: offset,
+                orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
+            })
 
-                total = await this.prisma.center.count()
-            } else {
-                centers = await this.prisma.center.findMany({
-                    // @ts-ignore
-                    where: {
-                        status,
-                        ...commonWhere
-                    },
-                    take: limit,
-                    skip: offset,
-                    orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
-                })
+            const total = await this.prisma.center.count({
+                // @ts-ignore
+                where: commonWhere
+            })
 
-                total = await this.prisma.center.count({ where: { status } })
-            }
+            const totalPages = Math.ceil(total / limit)
+            const hasNext = page < totalPages
+            const hasPrev = page > 1
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { facilities: centers, total }
+                data: centers,
+                metadata: {
+                    total,
+                    totalPages,
+                    hasNext,
+                    hasPrev,
+                    currentPage: page,
+                }
             })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error fetching facilities")
