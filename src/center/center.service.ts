@@ -857,9 +857,9 @@ export class CenterService {
         res: Response,
         { sub, role }: ExpressUser,
         {
-            limit = 100, page = 1,
-            status, sortBy, search = '',
-            endDate = '', startDate = '',
+            priority, status, search = '',
+            modality, sortBy, startDate = '',
+            limit = 100, page = 1, endDate = '',
         }: FetchPatientStudyDTO,
     ) {
         try {
@@ -890,6 +890,8 @@ export class CenterService {
 
             const commonWhereConditions = {
                 ...status && { status },
+                modality: modality ?? undefined,
+                priority: priority ?? undefined,
                 updatedAt: dateFilter,
             }
 
@@ -942,6 +944,7 @@ export class CenterService {
                     select: {
                         mrn: true,
                         dob: true,
+                        gender: true,
                         fullname: true,
                     },
                 },
@@ -973,6 +976,7 @@ export class CenterService {
                     select: {
                         mrn: true,
                         dob: true,
+                        gender: true,
                         fullname: true,
                     },
                 },

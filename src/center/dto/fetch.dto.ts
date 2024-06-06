@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { IsEnum, IsOptional } from 'class-validator'
 import { InfiniteScrollWithSearchDTO } from './filter.dto'
-import { PatientStatus, StudyStatus } from '@prisma/client'
+import { Modality, PatientStatus, Priority, StudyStatus } from '@prisma/client'
 
 enum Role {
     doctor = "doctor",
@@ -53,6 +53,18 @@ export class FetchPatientStudyDTO extends FetchSPDTO {
     @IsOptional()
     @IsEnum(StudyStatus)
     status: StudyStatus
+
+    @ApiProperty({
+        enum: Modality
+    })
+    @IsEnum(Modality)
+    modality: Modality
+
+    @ApiProperty({
+        enum: Priority
+    })
+    @IsEnum(Priority)
+    priority: Priority
 }
 
 export class FetchPatientDTO extends FetchSPDTO {
