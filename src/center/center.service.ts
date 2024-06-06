@@ -523,7 +523,7 @@ export class CenterService {
             if (files?.length) {
                 try {
                     const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 5 << 20, '.pdf', '.docx', '.png', '.jpg', '.jpeg')
+                        const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
@@ -551,7 +551,7 @@ export class CenterService {
 
             const studyId = await genPassword()
 
-            await this.prisma.patientStudy.create({
+            const data = await this.prisma.patientStudy.create({
                 data: {
                     paperwork, status: 'Unassigned',
                     study_id: studyId.toUpperCase(),
@@ -563,7 +563,7 @@ export class CenterService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { studyId },
+                data,
                 message: "Patient Study has been added"
             })
         } catch (err) {
@@ -593,7 +593,7 @@ export class CenterService {
             }
 
             if (study.patient.status === "Archived") {
-                return this.response.sendError(res, StatusCodes.Forbidden, "Patient has been archived. Unarchived first..")
+                return this.response.sendError(res, StatusCodes.Forbidden, "You need to unarchive the patient before editing..")
             }
 
             const mrn = study.patient.mrn
@@ -602,11 +602,11 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.Unauthorized, "Seek permission to edit")
             }
 
-            let paperwork = [] as IFile[]
+            let paperwork: IFile[] = []
             if (files?.length) {
                 try {
                     const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 5 << 20, '.pdf', '.docx', '.png', '.jpg', '.jpeg')
+                        const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
@@ -661,7 +661,7 @@ export class CenterService {
                 }
             }
 
-            await this.prisma.patientStudy.update({
+            const data = await this.prisma.patientStudy.update({
                 where: { study_id: studyId },
                 data: {
                     paperwork,
@@ -672,7 +672,7 @@ export class CenterService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: { studyId },
+                data,
                 message: "Patient study has been updated"
             })
         } catch (err) {
@@ -860,9 +860,10 @@ export class CenterService {
         }: FetchPatientStudyDTO,
     ) {
         try {
+            page = Number(page)
             limit = Number(limit)
             search = search?.trim() ?? ''
-            const offset = (Number(page) - 1) * limit
+            const offset = (page - 1) * limit
 
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
@@ -931,7 +932,7 @@ export class CenterService {
             take: limit,
             skip: offset,
             orderBy: sortBy === "name" ? { body_part: 'asc' } : { updatedAt: 'desc' },
-            select: {
+            include: {
                 patient: {
                     select: {
                         mrn: true,
@@ -939,12 +940,6 @@ export class CenterService {
                         fullname: true,
                     },
                 },
-                id: true,
-                status: true,
-                modality: true,
-                priority: true,
-                study_id: true,
-                body_part: true,
             },
         })
     }
@@ -968,7 +963,7 @@ export class CenterService {
             take: limit,
             skip: offset,
             orderBy: sortBy === "name" ? { body_part: 'asc' } : { updatedAt: 'desc' },
-            select: {
+            include: {
                 patient: {
                     select: {
                         mrn: true,
@@ -976,12 +971,6 @@ export class CenterService {
                         fullname: true,
                     },
                 },
-                id: true,
-                status: true,
-                modality: true,
-                priority: true,
-                study_id: true,
-                body_part: true,
             },
         })
     }
