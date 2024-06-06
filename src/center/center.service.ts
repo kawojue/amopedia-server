@@ -3,7 +3,6 @@ import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
 import { AwsService } from 'lib/aws.service'
 import { AddPatientDTO } from './dto/patient'
-import { $Enums, Roles } from '@prisma/client'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
 import {
@@ -14,11 +13,14 @@ import { transformMRN } from 'helpers/transformer'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
+import { $Enums, Roles, StudyStatus } from '@prisma/client'
 import { genFilename, genPassword } from 'helpers/generator'
+import {
+    DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
+} from './dto/study.dto'
 import {
     ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
-import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
 @Injectable()
 export class CenterService {
@@ -557,6 +559,7 @@ export class CenterService {
                     study_id: studyId.toUpperCase(),
                     access_code, body_part, cpt_code,
                     clinical_info, description, procedure,
+                    center: { connect: { id: centerId } },
                     patient: { connect: { id: patient.id } },
                     priority, reporting_status, site, modality,
                 }
@@ -578,7 +581,7 @@ export class CenterService {
             access_code, body_part, cpt_code,
             clinical_info, description, procedure,
             priority, reporting_status, site, modality,
-        }: PatientStudyDTO,
+        }: EditPatientStudyDTO,
         { centerId }: ExpressUser,
         files: Array<Express.Multer.File>,
     ) {
@@ -597,9 +600,8 @@ export class CenterService {
             }
 
             const mrn = study.patient.mrn
-
             if (study.patient.centerId !== centerId) {
-                return this.response.sendError(res, StatusCodes.Unauthorized, "Seek permission to edit")
+                return this.response.sendError(res, StatusCodes.Unauthorized, "Seek the permission to edit")
             }
 
             let paperwork: IFile[] = []
@@ -1081,8 +1083,15 @@ export class CenterService {
                 const isNotAccessible = this.isNotAccessibleForPractitioner(sub, centerId, patient.id)
 
                 if (isNotAccessible) {
-                    return this.response.sendError(res, StatusCodes.Forbidden, "Access denied")
+                    return this.response.sendError(res, StatusCodes.Forbidden, "You do not have access to this patient's record")
                 }
+
+                res.on('finish', async () => {
+                    await this.prisma.patientStudy.update({
+                        where: { study_id: studyId },
+                        data: { status: 'Opened' }
+                    })
+                })
             }
 
             this.response.sendSuccess(res, StatusCodes.OK, { data: study })
@@ -1151,5 +1160,33 @@ export class CenterService {
         })
 
         this.response.sendSuccess(res, StatusCodes.OK, { data: trash })
+    }
+
+    async reportAnalytics(
+        res: Response,
+        { sub, centerId, role }: ExpressUser
+    ) {
+        try {
+            const statuses: StudyStatus[] = ['Assigned', 'Closed', 'Opened', 'Unassigned']
+            let data: {
+                status: StudyStatus
+                count: number
+            }[] = []
+
+            for (const status of statuses) {
+                const count = await this.prisma.patientStudy.count({
+                    where: role === "centerAdmin" ? { centerId, status } : {
+                        centerId, status,
+                        practitionerId: sub
+                    }
+                })
+
+                data.push({ status, count })
+            }
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
     }
 }

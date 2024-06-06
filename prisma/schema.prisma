@@ -38,6 +38,7 @@ model Center {
     patients    Patient[]
     admins      CenterAdmin[]
     practioners Practitioner[]
+    studies     PatientStudy[]
 }
 
 model CenterAdmin {
@@ -78,6 +79,8 @@ model Practitioner {
     patientStudies PatientStudy[]
     center         Center?        @relation(fields: [centerId], references: [id])
     centerId       String?        @unique @db.ObjectId
+
+    @@index([fullname, email, phone])
 }
 
 model Patient {
@@ -98,15 +101,17 @@ model Patient {
     caseStudies   PatientStudy[]
     createdAt     DateTime       @default(now())
     updatedAt     DateTime       @updatedAt
+
+    @@index([fullname, email, phone])
 }
 
 model PatientStudy {
     id               String        @id @default(auto()) @map("_id") @db.ObjectId
     study_id         String        @unique
     body_part        String
-    priority         String?
+    priority         Priority
+    modality         Modality
     cpt_code         String?
-    modality         String?
     procedure        String?
     description      String?
     clinical_info    String?
@@ -122,8 +127,10 @@ model PatientStudy {
     practitionerId   String?       @db.ObjectId
     patient          Patient       @relation(fields: [patientId], references: [id])
     patientId        String        @db.ObjectId
+    center           Center        @relation(fields: [centerId], references: [id])
+    centerId         String        @unique @db.ObjectId
 
-    @@index([priority, modality, study_id, body_part, clinical_info, access_code, description])
+    @@index([study_id, body_part, clinical_info, access_code, description])
 }
 
 model Trash {
@@ -149,6 +156,32 @@ enum StudyStatus {
     Closed
     Assigned
     Unassigned
+}
+
+enum Priority {
+    Medium
+    Urgent
+    Extreme
+    Critical
+}
+
+enum Modality {
+    CR
+    CT
+    MR
+    NM
+    US
+    OT
+    XA
+    RF
+    DX
+    MG
+    PT
+    RG
+    OP
+    XC
+    SC
+    IVUS
 }
 
 enum Gender {

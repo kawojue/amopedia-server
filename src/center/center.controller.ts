@@ -16,11 +16,13 @@ import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
   Body, Controller, Get, Param, Patch, Post, Put, Query,
 } from '@nestjs/common'
+import {
+  DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
+} from './dto/study.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import {
   ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
-import { DesignateStudyDTO, PatientStudyDTO } from './dto/study.dto'
 
 @ApiBearerAuth()
 @ApiTags('Center')
@@ -76,6 +78,12 @@ export class CenterController {
     await this.centerService.analytics(res, req.user)
   }
 
+  @Role(Roles.centerAdmin, Roles.radiologist, Roles.doctor)
+  @Get('/analytics/report')
+  async reportAnalytics(@Req() req: IRequest, @Res() res: Response) {
+    await this.centerService.reportAnalytics(res, req.user)
+  }
+
   @Get('/charts')
   @Role(Roles.centerAdmin)
   async charts(
@@ -128,7 +136,7 @@ export class CenterController {
     @Body() body: PatientStudyDTO,
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    await this.centerService.createPatientStudy(res, mrn, body, req.user, files)
+    await this.centerService.createPatientStudy(res, mrn, body, req.user, files || [])
   }
 
   @Get('/patient/:mrn/study/:studyId')
@@ -151,11 +159,11 @@ export class CenterController {
   async editPatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
-    @Body() body: PatientStudyDTO,
+    @Body() body: EditPatientStudyDTO,
     @Param('studyId') studyId: string,
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    await this.centerService.editPatientStudy(res, studyId, body, req.user, files)
+    await this.centerService.editPatientStudy(res, studyId, body, req.user, files || [])
   }
 
   @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
@@ -203,7 +211,7 @@ export class CenterController {
     @Param('studyId') studyId: string,
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    await this.centerService.uploadDicomFiles(res, studyId, req.user, files)
+    await this.centerService.uploadDicomFiles(res, studyId, req.user, files || [])
   }
 
   @Role(Roles.centerAdmin)

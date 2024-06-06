@@ -2,6 +2,8 @@ import { ApiProperty } from '@nestjs/swagger'
 import {
     IsEnum, IsNotEmpty, IsOptional, IsString
 } from 'class-validator'
+import { Priority, Modality } from '@prisma/client'
+import { PartialType } from '@nestjs/mapped-types'
 
 enum ReportingStatus {
     Closed = "Closed",
@@ -17,11 +19,11 @@ export class PatientStudyDTO {
     body_part: string
 
     @ApiProperty({
-        example: 'Extreme/Medium'
+        enum: Priority
     })
-    @IsString()
     @IsNotEmpty()
-    priority: string
+    @IsEnum(Priority)
+    priority: Priority
 
     @ApiProperty({
         example: '12345'
@@ -31,11 +33,11 @@ export class PatientStudyDTO {
     cpt_code: string
 
     @ApiProperty({
-        example: 'CT'
+        enum: Modality
     })
-    @IsString()
+    @IsEnum(Modality)
     @IsNotEmpty()
-    modality: string
+    modality: Modality
 
     @ApiProperty({
         example: 'Na to use chisel remove am or drink water'
@@ -85,6 +87,8 @@ export class PatientStudyDTO {
     @IsOptional()
     paperworks: Array<Express.Multer.File>
 }
+
+export class EditPatientStudyDTO extends PartialType(PatientStudyDTO) { }
 
 enum DesignateStudy {
     Assign = "Assigned",
