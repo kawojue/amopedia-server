@@ -1179,7 +1179,7 @@ export class CenterService {
                 }
             }
 
-            this.prisma.patientStudy.update({
+            await this.prisma.patientStudy.update({
                 where: { study_id: study.id },
                 data: { dicoms }
             })
