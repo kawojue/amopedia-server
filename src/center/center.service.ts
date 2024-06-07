@@ -49,7 +49,7 @@ export class CenterService {
 
     async fetchStaffs(
         res: Response,
-        { sub }: ExpressUser,
+        { sub, centerId }: ExpressUser,
         {
             limit = 50, page = 1,
             role, search = '', sortBy
@@ -66,18 +66,9 @@ export class CenterService {
 
             const offset = (page - 1) * limit
 
-            const admin = await this.prisma.centerAdmin.findUnique({
-                where: { id: sub },
-                include: { center: true }
-            })
-
-            if (!admin || !admin.center) {
-                return this.response.sendError(res, StatusCodes.NotFound, 'Center Admin or Center not found')
-            }
-
             const whereCondition = {
                 role,
-                centerId: admin.center.id,
+                centerId,
                 OR: [
                     { email: { contains: search, mode: 'insensitive' } },
                     { phone: { contains: search, mode: 'insensitive' } },
@@ -136,7 +127,7 @@ export class CenterService {
             })
 
             const centerAdmin = await this.prisma.centerAdmin.findUnique({
-                where: { id: staffId }
+                where: { id: staffId, centerId }
             })
 
             const practitioner = await this.prisma.practitioner.findUnique({
@@ -224,13 +215,12 @@ export class CenterService {
 
     async inviteCenterAdmin(
         res: Response,
-        { sub }: ExpressUser,
+        { sub, centerId }: ExpressUser,
         { email, fullname, phone, password }: InviteCenterAdminDTO
     ) {
         try {
             const admin = await this.prisma.centerAdmin.findUnique({
-                where: { id: sub, superAdmin: true },
-                select: { center: true }
+                where: { id: sub, superAdmin: true, centerId },
             })
 
             if (!admin) {
@@ -250,7 +240,7 @@ export class CenterService {
             await this.prisma.centerAdmin.create({
                 data: {
                     email, fullname, phone, password: pswd,
-                    center: { connect: { id: admin.center.id } }
+                    center: { connect: { id: centerId } }
                 }
             })
 
@@ -587,7 +577,7 @@ export class CenterService {
     ) {
         try {
             const study = await this.prisma.patientStudy.findUnique({
-                where: { study_id: studyId },
+                where: { study_id: studyId, centerId },
                 include: { patient: true }
             })
 
@@ -685,7 +675,7 @@ export class CenterService {
 
     async fetchPatients(
         res: Response,
-        { sub, role }: ExpressUser,
+        { sub, role, centerId }: ExpressUser,
         {
             limit = 100, page = 1,
             status, sortBy, search = '',
@@ -707,12 +697,12 @@ export class CenterService {
             if (role === "radiologist" || role === "doctor") {
                 const practitioner = await this.getPractitioner(sub)
                 if (practitioner) {
-                    const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchPatientsByPractitioner(practitioner.id, status, sortBy, search, startDate, endDate, limit, page)
+                    const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchPatientsByPractitioner(practitioner.id, centerId, status, sortBy, search, startDate, endDate, limit, page)
                     patients = fetchedPatients
                     totalCount = fetchedTotalCount
                 }
             } else {
-                const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchAllPatients(status, sortBy, search, startDate, endDate, limit, page)
+                const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchAllPatients(centerId, status, sortBy, search, startDate, endDate, limit, page)
                 patients = fetchedPatients
                 totalCount = fetchedTotalCount
             }
@@ -736,7 +726,7 @@ export class CenterService {
         }
     }
 
-    private async fetchPatientsByPractitioner(practitionerId: string, status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
+    private async fetchPatientsByPractitioner(practitionerId: string, centerId: string, status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
         const offset = (page - 1) * limit
 
         const dateFilter = {
@@ -746,6 +736,7 @@ export class CenterService {
 
         const patientStudies = await this.prisma.patientStudy.findMany({
             where: {
+                centerId,
                 practitionerId,
                 updatedAt: dateFilter,
             },
@@ -801,7 +792,7 @@ export class CenterService {
         return { patients, totalCount }
     }
 
-    private async fetchAllPatients(status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
+    private async fetchAllPatients(centerId: string, status: $Enums.PatientStatus, sortBy: string, search: string, startDate: string, endDate: string, limit: number, page: number) {
         const offset = (page - 1) * limit
 
         const dateFilter = {
@@ -812,6 +803,7 @@ export class CenterService {
         const totalCount = await this.prisma.patient.count({
             where: {
                 ...status ? { status } : {},
+                centerId,
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
@@ -819,13 +811,14 @@ export class CenterService {
                     { address: { contains: search, mode: 'insensitive' } },
                     { phone: { contains: search, mode: 'insensitive' } },
                 ],
-                createdAt: dateFilter,
+                updatedAt: dateFilter,
             }
         })
 
         const patients = await this.prisma.patient.findMany({
             where: {
                 ...status ? { status } : {},
+                centerId,
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
@@ -833,7 +826,7 @@ export class CenterService {
                     { address: { contains: search, mode: 'insensitive' } },
                     { phone: { contains: search, mode: 'insensitive' } },
                 ],
-                createdAt: dateFilter,
+                updatedAt: dateFilter,
             },
             take: limit,
             skip: offset,
@@ -855,7 +848,7 @@ export class CenterService {
 
     async fetchAllPatientStudies(
         res: Response,
-        { sub, role }: ExpressUser,
+        { sub, role, centerId }: ExpressUser,
         {
             priority, status, search = '',
             modality, sortBy, startDate = '',
@@ -889,6 +882,7 @@ export class CenterService {
             ]
 
             const commonWhereConditions = {
+                centerId,
                 ...status && { status },
                 modality: modality ?? undefined,
                 priority: priority ?? undefined,
@@ -1136,8 +1130,8 @@ export class CenterService {
         try {
             const study = await this.prisma.patientStudy.findUnique({
                 where: {
+                    centerId,
                     study_id: studyId,
-                    patient: { centerId },
                 }
             })
 
