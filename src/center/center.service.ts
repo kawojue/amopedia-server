@@ -1001,7 +1001,17 @@ export class CenterService {
                     centerId,
                     patient: { mrn },
                     practitionerId: sub,
-                }
+                },
+                include: {
+                   patient: {
+                    select: {
+                        mrn: true,
+                        dob: true,
+                        gender: true,
+                        fullname: true,
+                    },
+                },
+            },
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, { data: studies })
@@ -1093,7 +1103,17 @@ export class CenterService {
                 where: {
                     study_id: studyId,
                     patientId: patient.id,
-                }
+                },
+                include: {
+                   patient: {
+                    select: {
+                        mrn: true,
+                        dob: true,
+                        gender: true,
+                        fullname: true,
+                    },
+                },
+            },
             })
 
             if (!study) {
