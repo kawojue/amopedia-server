@@ -306,29 +306,29 @@ export class CenterService {
     ) {
         try {
             let total = 0
-
             const currentYear = new Date().getFullYear()
             let labels = [
                 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
             ]
 
-            const chart: {
-                label: string
-                count: string
-            }[] = []
+            const chart: { label: string; count: string }[] = []
 
             if (q === "weekdays") {
-                labels = ['MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT', 'SUN']
-
+                labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+                const today = new Date()
+                const startOfWeek = today.getDate() - today.getDay() + 1
                 for (let i = 0; i < 7; i++) {
-                    const count = await this.prisma.patient.count({
+                    const startDate = new Date(today.setDate(startOfWeek + i))
+                    const endDate = new Date(today.setDate(startOfWeek + i + 1))
+
+                    const count = await this.prisma.patientStudy.count({
                         where: {
                             centerId,
-                            AND: [
-                                { createdAt: { gte: new Date(currentYear, 0, i + 1) } },
-                                { createdAt: { lt: new Date(currentYear + 1, 0, i + 1) } }
-                            ]
+                            createdAt: {
+                                gte: startDate,
+                                lt: endDate
+                            }
                         }
                     })
                     chart.push({ label: labels[i], count: count.toString() })
@@ -337,25 +337,15 @@ export class CenterService {
             } else if (q === "monthly") {
                 for (let i = 0; i < labels.length; i++) {
                     const startDate = new Date(currentYear, i, 1)
-                    let endMonth = i + 1
-                    let endYear = currentYear
+                    const endDate = new Date(currentYear, i + 1, 1)
 
-                    if (endMonth === 12) {
-                        endMonth = 1
-                        endYear = currentYear + 1
-                    } else {
-                        endMonth++
-                    }
-
-                    const endDate = new Date(endYear, endMonth - 1, 1)
-
-                    const count = await this.prisma.patient.count({
+                    const count = await this.prisma.patientStudy.count({
                         where: {
                             centerId,
-                            AND: [
-                                { createdAt: { gte: startDate } },
-                                { createdAt: { lt: endDate } }
-                            ]
+                            createdAt: {
+                                gte: startDate,
+                                lt: endDate
+                            }
                         }
                     })
 
