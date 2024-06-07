@@ -9,7 +9,7 @@ import {
     InviteCenterAdminDTO, InviteMedicalStaffDTO
 } from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
-import { transformMRN } from 'helpers/transformer'
+import { toUpperCase, transformMRN } from 'helpers/transformer'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
@@ -535,8 +535,8 @@ export class CenterService {
 
             const data = await this.prisma.patientStudy.create({
                 data: {
+                    study_id: toUpperCase(studyId),
                     paperwork, status: 'Unassigned',
-                    study_id: studyId.toUpperCase(),
                     access_code, body_part, cpt_code,
                     clinical_info, description, procedure,
                     center: { connect: { id: centerId } },
@@ -567,7 +567,7 @@ export class CenterService {
     ) {
         try {
             const study = await this.prisma.patientStudy.findUnique({
-                where: { study_id: studyId, centerId },
+                where: { study_id: toUpperCase(studyId), centerId },
                 include: { patient: true }
             })
 
@@ -645,7 +645,7 @@ export class CenterService {
             }
 
             const data = await this.prisma.patientStudy.update({
-                where: { study_id: studyId },
+                where: { study_id: study.study_id },
                 data: {
                     paperwork,
                     access_code, body_part, cpt_code,
@@ -1036,7 +1036,7 @@ export class CenterService {
             }
 
             const study = await this.prisma.patientStudy.findUnique({
-                where: { study_id: studyId, patientId: patient.id }
+                where: { study_id: toUpperCase(studyId), patientId: patient.id }
             })
 
             if (!study) {
@@ -1064,7 +1064,7 @@ export class CenterService {
                     }
                 }),
                 this.prisma.patientStudy.update({
-                    where: { study_id: studyId },
+                    where: { study_id: toUpperCase(studyId) },
                     data: { status: action }
                 })
             ])
@@ -1091,7 +1091,7 @@ export class CenterService {
 
             const study = await this.prisma.patientStudy.findUnique({
                 where: {
-                    study_id: studyId,
+                    study_id: toUpperCase(studyId),
                     patientId: patient.id,
                 },
                 include: {
@@ -1119,7 +1119,7 @@ export class CenterService {
 
                 res.on('finish', async () => {
                     await this.prisma.patientStudy.update({
-                        where: { study_id: studyId },
+                        where: { study_id: toUpperCase(studyId) },
                         data: { status: 'Opened' }
                     })
                 })
@@ -1141,7 +1141,7 @@ export class CenterService {
             const study = await this.prisma.patientStudy.findUnique({
                 where: {
                     centerId,
-                    study_id: studyId.toUpperCase(),
+                    study_id: toUpperCase(studyId),
                 }
             })
 
