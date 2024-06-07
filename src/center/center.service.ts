@@ -1149,11 +1149,11 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
             }
 
-            let dicoms = [] as IFile[]
+            let dicoms: IFile[] = []
             if (files?.length) {
                 try {
                     const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 50 << 20, 'dcm')
+                        const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
