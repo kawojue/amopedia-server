@@ -23,6 +23,7 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import {
   ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
+import { toUpperCase } from 'helpers/transformer'
 
 @ApiBearerAuth()
 @ApiTags('Center')
@@ -159,7 +160,7 @@ export class CenterController {
     @Param('mrn') mrn: string,
     @Param('studyId') studyId: string
   ) {
-    await this.centerService.getPatientStudy(res, req.user, mrn, studyId)
+    await this.centerService.getPatientStudy(res, req.user, mrn, toUpperCase(studyId))
   }
 
   @ApiOperation({
@@ -175,7 +176,7 @@ export class CenterController {
     @Param('studyId') studyId: string,
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    await this.centerService.editPatientStudy(res, studyId, body, req.user, files || [])
+    await this.centerService.editPatientStudy(res, toUpperCase(studyId), body, req.user, files || [])
   }
 
   @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
@@ -188,7 +189,7 @@ export class CenterController {
     @Query() query: DesignateStudyDTO,
     @Param('practitionerId') practitionerId: string,
   ) {
-    await this.centerService.designatePatientStudy(res, mrn, studyId, practitionerId, req.user, query)
+    await this.centerService.designatePatientStudy(res, mrn, toUpperCase(studyId), practitionerId, req.user, query)
   }
 
   @Get('/patients')
@@ -223,7 +224,7 @@ export class CenterController {
     @Param('studyId') studyId: string,
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    await this.centerService.uploadDicomFiles(res, studyId, req.user, files || [])
+    await this.centerService.uploadDicomFiles(res, toUpperCase(studyId), req.user, files || [])
   }
 
   @Role(Roles.centerAdmin)
