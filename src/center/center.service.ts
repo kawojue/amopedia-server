@@ -10,7 +10,6 @@ import {
 } from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
-import { transformMRN } from 'helpers/transformer'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { $Enums, Roles, StudyStatus } from '@prisma/client'
@@ -18,6 +17,7 @@ import { genFilename, genPassword } from 'helpers/generator'
 import {
     DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
 } from './dto/study.dto'
+import { toUpperCase, transformMRN } from 'helpers/transformer'
 import {
     ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
@@ -535,7 +535,7 @@ export class CenterService {
 
             const data = await this.prisma.patientStudy.create({
                 data: {
-                    study_id: studyId,
+                    study_id: toUpperCase(studyId),
                     paperwork, status: 'Unassigned',
                     access_code, body_part, cpt_code,
                     clinical_info, description, procedure,
