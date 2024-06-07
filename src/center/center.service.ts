@@ -1179,6 +1179,11 @@ export class CenterService {
                 }
             }
 
+            this.prisma.patientStudy.update({
+                where: { study_id: study.id },
+                data: { dicoms }
+            })
+
             this.response.sendSuccess(res, StatusCodes.OK, { data: dicoms })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error upload DICOM Files")
