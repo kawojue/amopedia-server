@@ -1,7 +1,7 @@
 import { getFileExtension } from './transformer'
 
 export const genFilename = (file: Express.Multer.File) => {
-    return `${file.filename || ''}_${new Date()
+    return `${file.originalname.split('.')[0] || ''}_${new Date()
         .toDateString()
         .split(" ")
         .join('-')}_${Math.floor(new Date().getTime() / 1000)}.${getFileExtension(file.mimetype)}`

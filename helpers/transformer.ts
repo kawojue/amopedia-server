@@ -33,6 +33,7 @@ export const getFileExtension = (file: Express.Multer.File | string): string | u
     let extension: string | undefined
 
     switch (mimetype) {
+        case 'application/octet-stream':
         case 'application/dicom':
             extension = 'dcm'
             break

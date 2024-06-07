@@ -1141,7 +1141,7 @@ export class CenterService {
             const study = await this.prisma.patientStudy.findUnique({
                 where: {
                     centerId,
-                    study_id: studyId,
+                    study_id: studyId.toUpperCase(),
                 }
             })
 
