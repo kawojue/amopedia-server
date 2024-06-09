@@ -17,15 +17,15 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
     methods: 'GET,PATCH,POST,PUT,DELETE',
   })
-  app.use(express.json({ limit: 250 << 20 }))
+  app.use(express.json({ limit: 100 << 20 }))
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle('Amorad Documentation')
-    .setDescription('All API Endpoints')
-    .setVersion('1.0.1')
-    .addServer(`https://amorad.onrender.com`, 'Staging environment')
-    .addServer(`http://localhost:${PORT}`, 'Local environment')
+    .setDescription('API Endpoints')
+    .setVersion('1.2')
+    .addServer(`https://amorad.onrender.com`, 'Staging')
+    .addServer(`http://localhost:${PORT}`, 'Local')
     .addBearerAuth()
     .build()
 
