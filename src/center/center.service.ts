@@ -32,24 +32,35 @@ export class CenterService {
         private readonly encryption: EncryptionService,
     ) { }
 
-    private async isNotAccessibleForPractitioner(sub: string, centerId: string, patientId: string) {
+    private async isNotAccessibleForPractitioner(sub: string, patientId: string) {
+        let isAccessible = false
+
         const practitioner = await this.prisma.practitioner.findUnique({
-            where: { id: sub, centerId }
+            where: { id: sub }
         })
 
-        const studies = await this.prisma.patientStudy.findMany({
-            where: {
-                patientId,
-                practitionerId: practitioner.id
-            }
-        })
+        if (!practitioner) return
 
-        return studies.length === 0
+        if (practitioner.type === 'center' && practitioner.role === "radiologist") {
+            isAccessible = true
+        }
+
+        if (practitioner.type === 'system' || practitioner.role === "doctor") {
+            const studiesCount = await this.prisma.patientStudy.count({
+                where: {
+                    patientId,
+                    practitionerId: practitioner.id
+                }
+            })
+            isAccessible = studiesCount === 0
+        }
+
+        return isAccessible
     }
 
     async fetchStaffs(
         res: Response,
-        { sub, centerId }: ExpressUser,
+        { centerId }: ExpressUser,
         {
             limit = 50, page = 1,
             role, search = '', sortBy
@@ -58,7 +69,6 @@ export class CenterService {
         try {
             page = Number(page)
             limit = Number(limit)
-            search = search?.trim() ?? ''
 
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
@@ -468,7 +478,7 @@ export class CenterService {
             }
 
             if (role === "doctor" || role === "radiologist") {
-                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, centerId, patient.id)
+                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, patient.id)
 
                 if (isNotAccessible) {
                     return this.response.sendError(res, StatusCodes.Forbidden, "Access denied")
@@ -675,7 +685,6 @@ export class CenterService {
         try {
             page = Number(page)
             limit = Number(limit)
-            search = search?.trim() ?? ''
 
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
@@ -685,12 +694,9 @@ export class CenterService {
             let totalCount = 0
 
             if (role === "radiologist" || role === "doctor") {
-                const practitioner = await this.getPractitioner(sub)
-                if (practitioner) {
-                    const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchPatientsByPractitioner(practitioner.id, centerId, status, sortBy, search, startDate, endDate, limit, page)
-                    patients = fetchedPatients
-                    totalCount = fetchedTotalCount
-                }
+                const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchPatientsByPractitioner(sub, centerId, status, sortBy, search, startDate, endDate, limit, page)
+                patients = fetchedPatients
+                totalCount = fetchedTotalCount
             } else {
                 const { patients: fetchedPatients, totalCount: fetchedTotalCount } = await this.fetchAllPatients(centerId, status, sortBy, search, startDate, endDate, limit, page)
                 patients = fetchedPatients
@@ -724,14 +730,32 @@ export class CenterService {
             lte: endDate !== '' ? new Date(endDate) : new Date(),
         }
 
-        const patientStudies = await this.prisma.patientStudy.findMany({
-            where: {
-                centerId,
-                practitionerId,
-                updatedAt: dateFilter,
-            },
-            select: { patientId: true },
-        })
+        const practitioner = await this.getPractitioner(practitionerId)
+
+        let patientStudies: {
+            patientId: string
+        }[] = []
+
+        if (practitioner.type === 'center' && practitioner.role === "radiologist") {
+            patientStudies = await this.prisma.patientStudy.findMany({
+                where: {
+                    centerId,
+                    updatedAt: dateFilter,
+                },
+                select: { patientId: true },
+            })
+        }
+
+        if (practitioner.type === 'system' || practitioner.role === "doctor") {
+            patientStudies = await this.prisma.patientStudy.findMany({
+                where: {
+                    centerId,
+                    practitionerId,
+                    updatedAt: dateFilter,
+                },
+                select: { patientId: true },
+            })
+        }
 
         const patientIdsSet = new Set(patientStudies.map(ps => ps.patientId))
         const patientIds = Array.from(patientIdsSet)
@@ -848,7 +872,6 @@ export class CenterService {
         try {
             page = Number(page)
             limit = Number(limit)
-            search = search?.trim() ?? ''
             const offset = (page - 1) * limit
 
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
@@ -880,11 +903,8 @@ export class CenterService {
             }
 
             if (role === "radiologist" || role === "doctor") {
-                const practitioner = await this.getPractitioner(sub)
-                const practitionerId = practitioner.id
-
-                patientStudies = await this.fetchStudiesByPractitioner(practitionerId, commonWhereConditions, searchFilter, sortBy, limit, offset)
-                total = await this.getTotalCountByPractitioner(practitionerId, commonWhereConditions, searchFilter)
+                patientStudies = await this.fetchStudiesByPractitioner(sub, commonWhereConditions, searchFilter, sortBy, limit, offset)
+                total = await this.getTotalCountByPractitioner(sub, commonWhereConditions, searchFilter)
             } else {
                 patientStudies = await this.fetchAllStudies(commonWhereConditions, searchFilter, sortBy, limit, offset)
                 total = await this.getTotalCount(commonWhereConditions, searchFilter)
@@ -914,12 +934,26 @@ export class CenterService {
     }
 
     private async fetchStudiesByPractitioner(practitionerId: string, commonWhereConditions: any, searchFilter: any[], sortBy: string, limit: number, offset: number) {
-        return await this.prisma.patientStudy.findMany({
-            where: {
+        const practitioner = await this.getPractitioner(practitionerId)
+
+        let where: any
+
+        if (practitioner.type === 'center' && practitioner.role === "radiologist") {
+            where = {
+                ...commonWhereConditions,
+                OR: searchFilter,
+            }
+        }
+        if (practitioner.type === 'system' || practitioner.role === "doctor") {
+            where = {
                 practitionerId,
                 ...commonWhereConditions,
                 OR: searchFilter,
-            },
+            }
+        }
+
+        return await this.prisma.patientStudy.findMany({
+            where,
             take: limit,
             skip: offset,
             orderBy: sortBy === "name" ? { body_part: 'asc' } : { updatedAt: 'desc' },
@@ -937,13 +971,25 @@ export class CenterService {
     }
 
     private async getTotalCountByPractitioner(practitionerId: string, commonWhereConditions: any, searchFilter: any[]) {
-        return await this.prisma.patientStudy.count({
-            where: {
+        const practitioner = await this.getPractitioner(practitionerId)
+
+        let where: any
+
+        if (practitioner.type === 'center' && practitioner.role === "radiologist") {
+            where = {
+                ...commonWhereConditions,
+                OR: searchFilter,
+            }
+        }
+        if (practitioner.type === 'system' || practitioner.role === "doctor") {
+            where = {
                 practitionerId,
                 ...commonWhereConditions,
                 OR: searchFilter,
-            },
-        })
+            }
+        }
+
+        return await this.prisma.patientStudy.count({ where })
     }
 
     private async fetchAllStudies(commonWhereConditions: any, searchFilter: any[], sortBy: string, limit: number, offset: number) {
@@ -983,15 +1029,26 @@ export class CenterService {
         { sub, role, centerId }: ExpressUser,
     ) {
         try {
-            const studies = await this.prisma.patientStudy.findMany({
-                where: role === "centerAdmin" ? {
+            let where: any
+            const practitioner = await this.getPractitioner(sub)
+
+            if (role === "centerAdmin" || (practitioner.type === 'center' && practitioner.role === "radiologist")) {
+                where = {
                     centerId,
                     patient: { mrn }
-                } : {
-                    centerId,
-                    patient: { mrn },
-                    practitionerId: sub,
-                },
+                }
+            } else {
+                if (practitioner.type === 'system' || practitioner.role === "doctor") {
+                    where = {
+                        centerId,
+                        patient: { mrn },
+                        practitionerId: sub,
+                    }
+                }
+            }
+
+            const studies = await this.prisma.patientStudy.findMany({
+                where,
                 include: {
                     patient: {
                         select: {
@@ -1111,7 +1168,7 @@ export class CenterService {
             }
 
             if (role === "radiologist" || role === "doctor") {
-                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, centerId, patient.id)
+                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, patient.id)
 
                 if (isNotAccessible) {
                     return this.response.sendError(res, StatusCodes.Forbidden, "You do not have access to this patient's record")

@@ -9,7 +9,6 @@ import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
-import { titleText, toLowerCase } from 'helpers/transformer'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
 
 @Injectable()
@@ -54,9 +53,6 @@ export class AdradospecService {
 
     async signup(res: Response, { email, password, fullname }: SignupDTO) {
         try {
-            email = toLowerCase(email)
-            fullname = titleText(fullname)
-
             const admin = await this.prisma.adradospec.findUnique({
                 where: { email }
             })
@@ -82,7 +78,7 @@ export class AdradospecService {
     async login(res: Response, { email, password }: LoginDTO) {
         try {
             const adradospec = await this.prisma.adradospec.findUnique({
-                where: { email: toLowerCase(email) }
+                where: { email }
             })
 
             if (!adradospec) {
@@ -125,8 +121,6 @@ export class AdradospecService {
         { email, fullname, role, password }: InviteDTO,
     ) {
         try {
-            email = toLowerCase(email)
-
             const adradospec = await this.prisma.adradospec.findUnique({
                 where: { id: sub }
             })
@@ -145,7 +139,7 @@ export class AdradospecService {
 
             const pswd = await this.encryption.hashAsync(password, 12)
 
-            const newAdradospec = await this.prisma.adradospec.create({
+            await this.prisma.adradospec.create({
                 data: {
                     email, fullname,
                     superAdmin: false,
@@ -153,12 +147,9 @@ export class AdradospecService {
                 }
             })
 
-            if (newAdradospec) {
-                // Todo: mail new password - pswd
-            }
-
             this.response.sendSuccess(res, StatusCodes.Created, {
-                message: `A new ${role} has been invited`
+                message: `A new ${role} has been invited`,
+                data: { password }
             })
         } catch (err) {
             this.misc.handleServerError(res, err)
@@ -174,7 +165,7 @@ export class AdradospecService {
                 createdAt: true,
                 fullname: true,
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { updatedAt: 'desc' }
         })
 
         this.response.sendSuccess(res, StatusCodes.OK, { data: adradospecs })
@@ -191,6 +182,7 @@ export class AdradospecService {
         try {
             page = Number(page)
             limit = Number(limit)
+
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
             }
@@ -312,8 +304,9 @@ export class AdradospecService {
         }: FetchPractitionersDTO
     ) {
         try {
-            limit = Number(limit)
             page = Number(page)
+            limit = Number(limit)
+
             if (isNaN(limit) || isNaN(page) || limit <= 0 || page <= 0) {
                 return this.response.sendError(res, StatusCodes.BadRequest, 'Invalid pagination parameters')
             }
@@ -361,7 +354,7 @@ export class AdradospecService {
     async fetchPractitioner(res: Response, practitionerId: string) {
         try {
             const practitioner = await this.prisma.practitioner.findUnique({
-                where: { id: practitionerId, type: 'system' }
+                where: { id: practitionerId, type: 'system' },
             })
 
             if (!practitioner) {
@@ -445,28 +438,28 @@ export class AdradospecService {
     ) {
         try {
             let total = 0
-
             const currentYear = new Date().getFullYear()
             let labels = [
                 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
             ]
 
-            const chart: {
-                label: string
-                count: string
-            }[] = []
+            const chart: { label: string; count: string }[] = []
 
             if (q === "weekdays") {
-                labels = ['MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT', 'SUN']
-
+                labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+                const today = new Date()
+                const startOfWeek = today.getDate() - today.getDay() + 1
                 for (let i = 0; i < 7; i++) {
+                    const startDate = new Date(today.setDate(startOfWeek + i))
+                    const endDate = new Date(today.setDate(startOfWeek + i + 1))
+
                     const count = await this.prisma.patient.count({
                         where: {
-                            AND: [
-                                { createdAt: { gte: new Date(currentYear, 0, i + 1) } },
-                                { createdAt: { lt: new Date(currentYear + 1, 0, i + 1) } }
-                            ]
+                            createdAt: {
+                                gte: startDate,
+                                lt: endDate
+                            }
                         }
                     })
                     chart.push({ label: labels[i], count: count.toString() })
@@ -475,24 +468,14 @@ export class AdradospecService {
             } else if (q === "monthly") {
                 for (let i = 0; i < labels.length; i++) {
                     const startDate = new Date(currentYear, i, 1)
-                    let endMonth = i + 1
-                    let endYear = currentYear
-
-                    if (endMonth === 12) {
-                        endMonth = 1
-                        endYear = currentYear + 1
-                    } else {
-                        endMonth++
-                    }
-
-                    const endDate = new Date(endYear, endMonth - 1, 1)
+                    const endDate = new Date(currentYear, i + 1, 1)
 
                     const count = await this.prisma.patient.count({
                         where: {
-                            AND: [
-                                { createdAt: { gte: startDate } },
-                                { createdAt: { lt: endDate } }
-                            ]
+                            createdAt: {
+                                gte: startDate,
+                                lt: endDate
+                            }
                         }
                     })
 

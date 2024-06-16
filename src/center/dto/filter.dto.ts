@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { Transform } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 enum Sort {
@@ -21,6 +22,7 @@ export class SearchDTO extends SortByDTO {
     })
     @IsString()
     @IsOptional()
+    @Transform(({ value }) => value.trim())
     search: string
 }
 
