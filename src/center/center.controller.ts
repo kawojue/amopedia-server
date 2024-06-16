@@ -11,6 +11,7 @@ import {
 } from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { CenterService } from './center.service'
+import { toUpperCase } from 'helpers/transformer'
 import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
@@ -23,7 +24,6 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import {
   ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
-import { toUpperCase } from 'helpers/transformer'
 
 @ApiBearerAuth()
 @ApiTags('Center')
