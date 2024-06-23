@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
+import * as dicomParser from 'dicom-parser'
 import { AwsService } from 'lib/aws.service'
 import { AddPatientDTO } from './dto/patient'
 import { MiscService } from 'lib/misc.service'
@@ -1209,30 +1210,37 @@ export class CenterService {
             let dicoms: IFile[] = []
             if (files?.length) {
                 try {
-                    const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
-
-                        if (re?.status) {
-                            return this.response.sendError(res, re.status, re.message)
-                        }
-
-                        const path = `${centerId}/${studyId}/${genFilename(re.file)}`
-                        await this.aws.uploadS3(file, path)
-
-                        return {
-                            type: re.file.mimetype,
-                            path, size: re.file.size,
-                            url: this.aws.getS3(path)
-                        }
-                    }))
-
-                    dicoms = results.filter((result): result is IFile => !!result)
-                } catch (err) {
-                    try {
-                        await this.aws.removeFiles(dicoms)
-                    } catch (err) {
-                        return this.response.sendError(res, StatusCodes.InternalServerError, "Something went wrong while uploading DICOM Files")
+                    for (const file of files) {
+                        const parsedFile = dicomParser.parseDicom(file.buffer)
+                        console.log({ parsedFile, file: file.originalname })
                     }
+
+                    // const results = await Promise.all(files.map(async file => {
+                    //     const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
+
+                    //     if (re?.status) {
+                    //         return this.response.sendError(res, re.status, re.message)
+                    //     }
+
+                    //     const path = `${centerId}/${studyId}/${genFilename(re.file)}`
+                    //     await this.aws.uploadS3(file, path)
+
+                    //     return {
+                    //         type: re.file.mimetype,
+                    //         path, size: re.file.size,
+                    //         url: this.aws.getS3(path)
+                    //     }
+                    // }))
+
+                    // dicoms = results.filter((result): result is IFile => !!result)
+                } catch (err) {
+                    console.error(err)
+                    // try {
+                    //     await this.aws.removeFiles(dicoms)
+                    // } catch (err) {
+                    //     this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
+                    //     return
+                    // }
                 }
             }
 
