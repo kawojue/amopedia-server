@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger'
 import {
     IsEnum, IsNotEmpty, IsOptional, IsString
 } from 'class-validator'
-import { Priority, Modality } from '@prisma/client'
 import { PartialType } from '@nestjs/mapped-types'
+import { Priority, Modality } from '@prisma/client'
 
 enum ReportingStatus {
     Closed = "Closed",
@@ -82,7 +82,7 @@ export class PatientStudyDTO {
     reporting_status: ReportingStatus
 
     @ApiProperty({
-        type: [File]
+        type: Array<Express.Multer.File>
     })
     @IsOptional()
     paperworks: Array<Express.Multer.File>
