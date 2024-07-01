@@ -14,7 +14,7 @@ export const validateFile = (
 
     if (!extensions.includes(getFileExtension(file))) {
         return {
-            status: StatusCodes.UnsupportedContent,
+            status: StatusCodes.UnsupportedMediaType,
             message: `Extension is not allowed - ${file.originalname}`,
         }
     }

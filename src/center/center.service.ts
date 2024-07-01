@@ -1211,8 +1211,29 @@ export class CenterService {
             if (files?.length) {
                 try {
                     for (const file of files) {
-                        const parsedFile = dicomParser.parseDicom(file.buffer)
-                        console.log({ parsedFile, file: file.originalname })
+                        const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
+
+                        const transferSyntaxUid = preliminaryDataSet.string('x00020010')
+
+                        console.log(transferSyntaxUid)
+
+                        const dataSet = dicomParser.parseDicom(file.buffer, { TransferSyntaxUID: transferSyntaxUid })
+
+                        const obj = {
+                            patientName: dataSet.string('x00100010'),
+                            patientID: dataSet.string('x00100020'),
+                            studyDate: dataSet.string('x00080020'),
+                            modality: dataSet.string('x00080060'),
+                            studyDescription: dataSet.string('x00081030'),
+                            seriesDescription: dataSet.string('x0008103e'),
+                            institutionName: dataSet.string('x00080080'),
+                            referringPhysicianName: dataSet.string('x00080090'),
+                            patientBirthDate: dataSet.string('x00100030'),
+                            patientSex: dataSet.string('x00100040'),
+                            bodyPartExamined: dataSet.string('x00180015'),
+                        }
+
+                        console.log(obj)
                     }
 
                     // const results = await Promise.all(files.map(async file => {
