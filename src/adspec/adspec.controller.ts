@@ -8,7 +8,7 @@ import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
-import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
+import { FetchCentersDTO, ToggleStatusDTO } from './dto/org.dto'
 import {
   Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
 } from '@nestjs/common'
@@ -49,28 +49,28 @@ export class AdspecController {
   }
 
   @ApiBearerAuth()
-  @Get('/facilities')
+  @Get('/centers')
   @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.admin, Roles.specialist)
-  async fetchOrganizations(
+  async fetchCenters(
     @Res() res: Response,
-    @Query() query: FetchOrganizationsDTO
+    @Query() query: FetchCentersDTO
   ) {
-    await this.adspecService.fetchOrganizations(res, query)
+    await this.adspecService.fetchCenters(res, query)
   }
 
   @ApiBearerAuth()
-  @Get('/facilities/:centerId')
+  @Get('/centers/:centerId')
   @Role(Roles.admin, Roles.specialist)
   @UseGuards(JwtAuthRoleGuard)
   async fetchOrganization(@Res() res: Response, @Param('centerId') centerId: string) {
-    await this.adspecService.fetchOrganization(res, centerId)
+    await this.adspecService.fetchCenter(res, centerId)
   }
 
   @ApiBearerAuth()
   @Role(Roles.admin)
   @UseGuards(JwtAuthRoleGuard)
-  @Patch('/facilities/:centerId/toggle-status')
+  @Patch('/centers/:centerId/toggle-status')
   async toggleOrgStatus(
     @Res() res: Response,
     @Query() query: ToggleStatusDTO,

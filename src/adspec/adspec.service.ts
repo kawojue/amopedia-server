@@ -177,7 +177,7 @@ export class AdspecService {
         this.response.sendSuccess(res, StatusCodes.OK, { data: adspecs })
     }
 
-    async fetchOrganizations(
+    async fetchCenters(
         res: Response,
         {
             limit = 100, page = 1,
@@ -239,7 +239,7 @@ export class AdspecService {
         }
     }
 
-    async fetchOrganization(res: Response, centerId: string) {
+    async fetchCenter(res: Response, centerId: string) {
         try {
             const center = await this.prisma.center.findUnique({
                 where: { id: centerId },

@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger'
 import { IsEnum, IsOptional } from 'class-validator'
 import { SearchDTO } from 'src/center/dto/filter.dto'
 
-export class FetchOrganizationsDTO extends SearchDTO {
+export class FetchCentersDTO extends SearchDTO {
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
         default: 0,
