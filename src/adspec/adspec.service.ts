@@ -9,7 +9,7 @@ import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
-import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
+import { FetchCentersDTO, ToggleStatusDTO } from './dto/org.dto'
 
 @Injectable()
 export class AdspecService {
@@ -183,7 +183,7 @@ export class AdspecService {
             limit = 100, page = 1,
             status, sortBy, search = "",
             endDate = '', startDate = '',
-        }: FetchOrganizationsDTO
+        }: FetchCentersDTO
     ) {
         try {
             page = Number(page)
