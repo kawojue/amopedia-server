@@ -1,12 +1,12 @@
 import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/jwt/role.decorator'
-import { ApiBearerAuth } from '@nestjs/swagger'
 import { AdspecService } from './adspec.service'
 import { LoginDTO } from 'src/auth/dto/login.dto'
 import { ChartDTO } from 'src/center/dto/fetch.dto'
 import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { FetchPractitionersDTO } from './dto/prac.dto'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
 import {
@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common'
 
 @Controller('adspec')
+@ApiTags("System Admin & Specialist")
 export class AdspecController {
   constructor(private readonly adspecService: AdspecService) { }
 
