@@ -3,16 +3,13 @@ import { Roles } from '@prisma/client'
 import {
   ApiBearerAuth, ApiOperation, ApiTags
 } from '@nestjs/swagger'
-import { Role } from 'src/role.decorator'
-import { AuthGuard } from '@nestjs/passport'
-import { AddPatientDTO } from './dto/patient'
+import { Role } from 'src/jwt/role.decorator'
 import {
   InviteCenterAdminDTO, InviteMedicalStaffDTO
 } from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { toUpperCase } from 'helpers/transformer'
-import { RolesGuard } from 'src/jwt/jwt-auth.guard'
 import {
   Req, Res, UploadedFiles, UseGuards, UseInterceptors,
   Body, Controller, Get, Param, Patch, Post, Put, Query,
@@ -21,6 +18,8 @@ import {
   DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
 } from './dto/study.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
+import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
 import {
   ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
@@ -28,7 +27,7 @@ import {
 @ApiBearerAuth()
 @ApiTags('Center')
 @Controller('center')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(JwtAuthRoleGuard)
 export class CenterController {
   constructor(private readonly centerService: CenterService) { }
 
@@ -42,8 +41,8 @@ export class CenterController {
     await this.centerService.fetchStaffs(res, req.user, query)
   }
 
-  @Patch('/manage/suspension/:staffId')
   @Role(Roles.centerAdmin)
+  @Patch('/manage/suspension/:staffId')
   async suspendMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -53,8 +52,8 @@ export class CenterController {
     await this.centerService.suspendStaff(res, staffId, req.user, query)
   }
 
-  @Post('/invite/medical-staff')
   @Role(Roles.centerAdmin)
+  @Post('/invite/medical-staff')
   async inviteMedicalStaff(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -63,8 +62,8 @@ export class CenterController {
     await this.centerService.inviteMedicalStaff(res, req.user, body)
   }
 
-  @Post('/invite/center-admin')
   @Role(Roles.centerAdmin)
+  @Post('/invite/center-admin')
   async inviteCenterAdmin(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -73,14 +72,14 @@ export class CenterController {
     await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 
-  @Role(Roles.centerAdmin)
   @Get('/analytics')
+  @Role(Roles.centerAdmin)
   async analytics(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.analytics(res, req.user)
   }
 
-  @Role(Roles.centerAdmin, Roles.radiologist, Roles.doctor)
   @Get('/analytics/report')
+  @Role(Roles.centerAdmin, Roles.radiologist, Roles.doctor)
   async reportAnalytics(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.reportAnalytics(res, req.user)
   }
@@ -105,13 +104,13 @@ export class CenterController {
     await this.centerService.addPatient(res, req.user, body)
   }
 
-  @Put('/patient/:mrn/edit')
   @Role(Roles.centerAdmin)
+  @Put('/patient/:mrn/edit')
   async editPatient(
     @Req() req: IRequest,
     @Res() res: Response,
     @Param('mrn') mrn: string,
-    @Body() body: AddPatientDTO,
+    @Body() body: EditPatientDTO,
   ) {
     await this.centerService.editPatient(res, mrn, req.user, body)
   }
@@ -125,12 +124,12 @@ export class CenterController {
     await this.centerService.getPatient(res, mrn, req.user)
   }
 
+  @Role(Roles.centerAdmin)
+  @Post('/patient/:mrn/study')
+  @UseInterceptors(AnyFilesInterceptor())
   @ApiOperation({
     summary: 'The formdata key should be paperworks'
   })
-  @Post('/patient/:mrn/study')
-  @UseInterceptors(AnyFilesInterceptor())
-  @Role(Roles.centerAdmin)
   async createPatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -163,11 +162,11 @@ export class CenterController {
     await this.centerService.getPatientStudy(res, req.user, mrn, toUpperCase(studyId))
   }
 
+  @UseInterceptors(AnyFilesInterceptor())
+  @Put('/patient/:mrn/study/:studyId/edit')
   @ApiOperation({
     summary: 'The formdata key should be paperworks'
   })
-  @Put('/patient/:mrn/study/:studyId/edit')
-  @UseInterceptors(AnyFilesInterceptor())
   @Role(Roles.centerAdmin)
   async editPatientStudy(
     @Req() req: IRequest,
@@ -179,8 +178,8 @@ export class CenterController {
     await this.centerService.editPatientStudy(res, toUpperCase(studyId), body, req.user, files || [])
   }
 
-  @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
   @Role(Roles.centerAdmin)
+  @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
   async designatePatientStudy(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -212,12 +211,12 @@ export class CenterController {
     await this.centerService.fetchAllPatientStudies(res, req.user, query)
   }
 
+  @Role(Roles.centerAdmin)
+  @Post('/dicoms/:studyId')
+  @UseInterceptors(AnyFilesInterceptor())
   @ApiOperation({
     summary: 'The formdata key should be dicoms'
   })
-  @Post('/dicoms/:studyId')
-  @UseInterceptors(AnyFilesInterceptor())
-  @Role(Roles.centerAdmin)
   async uploadDicomFiles(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -227,6 +226,7 @@ export class CenterController {
     await this.centerService.uploadDicomFiles(res, toUpperCase(studyId), req.user, files || [])
   }
 
+  @Get('/bin')
   @Role(Roles.centerAdmin)
   async bin(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.bin(res, req.user)

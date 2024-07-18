@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+import { v4 as uuidv4 } from 'uuid'
 import { validateFile } from 'utils/file'
 import { Request, Response } from 'express'
 import { AwsService } from 'lib/aws.service'
@@ -51,10 +51,12 @@ export class AuthService {
 
             await this.prisma.practitioner.create({
                 data: {
-                    email, fullname, address, affiliation, zip_code,
-                    phone, city, state, country, password, practiceNumber,
                     role: 'radiologist', type: 'system', status: 'PENDING',
-                }
+                    email, fullname, affiliation, password, practiceNumber,
+                    demographic: {
+                        create: { phone, city, state, country, address, zip_code }
+                    },
+                },
             })
 
             // TODO: mailing
@@ -89,24 +91,32 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Organization already exist")
             }
 
-            const id = new ObjectId().toString()
+            const id = uuidv4()
 
             password = await this.encryption.hashAsync(password)
 
             await this.prisma.$transaction([
                 this.prisma.center.create({
                     data: {
-                        status: 'PENDING', ip: getIpAddress(req),
-                        email, centerName: organizationName, city,
-                        id, address, state, country, zip_code, phone,
+                        id: id,
+                        status: 'PENDING',
+                        email, centerName: organizationName,
+                        demographic: {
+                            create: {
+                                city, address, state,
+                                ip: getIpAddress(req),
+                                country, zip_code, phone,
+                            }
+                        }
                     }
                 }),
                 this.prisma.centerAdmin.create({
                     data: {
-                        fullname, email, phone,
-                        password, superAdmin: true,
-                        status: 'PENDING', role: 'centerAdmin',
+                        superAdmin: true,
+                        fullname, email, password,
                         center: { connect: { id } },
+                        demographic: { create: { phone } },
+                        status: 'PENDING', role: 'centerAdmin',
                     }
                 })
             ])

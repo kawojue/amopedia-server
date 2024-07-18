@@ -3,7 +3,6 @@ import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
 import * as dicomParser from 'dicom-parser'
 import { AwsService } from 'lib/aws.service'
-import { AddPatientDTO } from './dto/patient'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
 import {
@@ -19,6 +18,7 @@ import {
     DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
 } from './dto/study.dto'
 import { toUpperCase, transformMRN } from 'helpers/transformer'
+import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
 import {
     ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
 } from './dto/fetch.dto'
@@ -207,10 +207,15 @@ export class CenterService {
 
             await this.prisma.practitioner.create({
                 data: {
-                    type: 'center', state, address,
+                    demographic: {
+                        create: {
+                            state, address, city,
+                            country, phone, zip_code,
+                        }
+                    },
+                    email, fullname, password: pswd,
+                    type: 'center', status: 'ACTIVE',
                     center: { connect: { id: centerId } },
-                    city, country, email, fullname, phone,
-                    zip_code, status: 'ACTIVE', password: pswd,
                     role: profession as Roles, practiceNumber,
                 }
             })
@@ -250,8 +255,9 @@ export class CenterService {
 
             await this.prisma.centerAdmin.create({
                 data: {
-                    email, fullname, phone, password: pswd,
-                    center: { connect: { id: centerId } }
+                    email, fullname, password: pswd,
+                    demographic: { create: { phone } },
+                    center: { connect: { id: centerId } },
                 }
             })
 
@@ -290,6 +296,7 @@ export class CenterService {
                 const caseStudies = patient.caseStudies
                 await Promise.all(caseStudies.map(async caseStudy => {
                     const dicomCounts = await Promise.all(caseStudy.dicoms.map(async dicom => {
+                        // @ts-ignore
                         if (dicom?.path) {
                             return 1
                         } else {
@@ -377,7 +384,8 @@ export class CenterService {
         res: Response,
         { centerId }: ExpressUser,
         {
-            address, gender, nin,
+            state, city, country,
+            address, gender, govtId,
             marital_status, fullname,
             zip_code, dob, phone, email,
         }: AddPatientDTO,
@@ -388,8 +396,8 @@ export class CenterService {
                     centerId: centerId,
                     OR: [
                         { email: email },
-                        { phone: phone },
-                        { nin: nin },
+                        { govtId: govtId },
+                        { demographic: { phone: phone } },
                     ],
                 },
             })
@@ -407,11 +415,18 @@ export class CenterService {
 
             const newPatient = await this.prisma.patient.create({
                 data: {
-                    address, gender, nin, mrn,
+                    demographic: {
+                        create: {
+                            address, zip_code,
+                            gender, dob, phone,
+                            state, city, country,
+                        }
+                    },
+                    govtId, mrn, fullname, email,
                     maritalStatus: marital_status,
-                    fullname, zip_code, dob, phone, email,
                     center: { connect: { id: centerId } },
-                }
+                },
+                include: { demographic: true }
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
@@ -428,10 +443,11 @@ export class CenterService {
         mrn: string,
         { centerId }: ExpressUser,
         {
-            address, gender, nin,
+            state, city, country,
+            address, gender, govtId,
             marital_status, fullname,
             zip_code, dob, phone, email,
-        }: AddPatientDTO,
+        }: EditPatientDTO,
     ) {
         try {
             const patient = await this.prisma.patient.findUnique({
@@ -449,10 +465,17 @@ export class CenterService {
             const updatedPatient = await this.prisma.patient.update({
                 where: { mrn, centerId },
                 data: {
-                    zip_code, dob, phone, email,
+                    demographic: {
+                        update: {
+                            address, zip_code,
+                            gender, dob, phone,
+                            state, city, country,
+                        }
+                    },
+                    email, govtId, fullname,
                     maritalStatus: marital_status,
-                    address, gender, nin, fullname,
-                }
+                },
+                include: { demographic: true }
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
@@ -512,10 +535,10 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Patient does not exist")
             }
 
-            let paperwork = [] as IFile[]
+            let paperwork = []
             if (files?.length) {
                 try {
-                    const results = await Promise.all(files.map(async file => {
+                    const results = files.map(async (file) => {
                         const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
 
                         if (re?.status) {
@@ -530,9 +553,9 @@ export class CenterService {
                             path, size: re.file.size,
                             url: this.aws.getS3(path)
                         }
-                    }))
+                    })
 
-                    paperwork = results.filter((result): result is IFile => !!result)
+                    paperwork = await Promise.all(results)
                 } catch (err) {
                     try {
                         await this.aws.removeFiles(paperwork)
@@ -595,10 +618,10 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.Unauthorized, "Seek the permission to edit")
             }
 
-            let paperwork: IFile[] = []
+            let paperwork = []
             if (files?.length) {
                 try {
-                    const results = await Promise.all(files.map(async file => {
+                    const results = files.map(async (file) => {
                         const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
 
                         if (re?.status) {
@@ -613,9 +636,9 @@ export class CenterService {
                             path, size: re.file.size,
                             url: this.aws.getS3(path)
                         }
-                    }))
+                    })
 
-                    paperwork = results.filter((result): result is IFile => !!result)
+                    paperwork = await Promise.all(results)
                 } catch (err) {
                     try {
                         await this.aws.removeFiles(paperwork)
@@ -624,8 +647,8 @@ export class CenterService {
                     }
                 }
 
-                const paperworks = study.paperwork
-                let movedPaperwork = [] as IFile[]
+                const paperworks = study.paperwork as any
+                let movedPaperwork = []
                 if (paperworks.length > 0) {
                     for (const paperwork of paperworks) {
                         if (paperwork?.path) {
@@ -658,10 +681,9 @@ export class CenterService {
             const data = await this.prisma.patientStudy.update({
                 where: { study_id: study.study_id },
                 data: {
-                    paperwork,
-                    access_code, body_part, cpt_code,
                     clinical_info, description, procedure,
                     priority, reporting_status, site, modality,
+                    paperwork, access_code, body_part, cpt_code,
                 }
             })
 
@@ -768,9 +790,9 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
+                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
                 ],
                 createdAt: dateFilter
             }
@@ -783,9 +805,9 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
+                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
                 ],
                 createdAt: dateFilter
             },
@@ -794,12 +816,16 @@ export class CenterService {
             select: {
                 id: true,
                 mrn: true,
-                dob: true,
                 email: true,
-                phone: true,
-                gender: true,
                 status: true,
                 fullname: true,
+                demographic: {
+                    select: {
+                        dob: true,
+                        phone: true,
+                        gender: true,
+                    }
+                },
             },
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
@@ -822,9 +848,9 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
+                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
                 ],
                 updatedAt: dateFilter,
             }
@@ -837,9 +863,9 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
+                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
                 ],
                 updatedAt: dateFilter,
             },
@@ -848,12 +874,16 @@ export class CenterService {
             select: {
                 id: true,
                 mrn: true,
-                dob: true,
                 email: true,
-                phone: true,
-                gender: true,
                 status: true,
                 fullname: true,
+                demographic: {
+                    select: {
+                        dob: true,
+                        phone: true,
+                        gender: true,
+                    }
+                }
             },
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
@@ -962,8 +992,12 @@ export class CenterService {
                 patient: {
                     select: {
                         mrn: true,
-                        dob: true,
-                        gender: true,
+                        demographic: {
+                            select: {
+                                dob: true,
+                                gender: true,
+                            }
+                        },
                         fullname: true,
                     },
                 },
@@ -1006,8 +1040,12 @@ export class CenterService {
                 patient: {
                     select: {
                         mrn: true,
-                        dob: true,
-                        gender: true,
+                        demographic: {
+                            select: {
+                                dob: true,
+                                gender: true,
+                            }
+                        },
                         fullname: true,
                     },
                 },
@@ -1054,8 +1092,12 @@ export class CenterService {
                     patient: {
                         select: {
                             mrn: true,
-                            dob: true,
-                            gender: true,
+                            demographic: {
+                                select: {
+                                    dob: true,
+                                    gender: true,
+                                }
+                            },
                             fullname: true,
                         },
                     },
@@ -1156,8 +1198,12 @@ export class CenterService {
                     patient: {
                         select: {
                             mrn: true,
-                            dob: true,
-                            gender: true,
+                            demographic: {
+                                select: {
+                                    dob: true,
+                                    gender: true,
+                                }
+                            },
                             fullname: true,
                         },
                     },
@@ -1207,19 +1253,23 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
             }
 
-            let dicoms: IFile[] = []
+            let dicoms = []
             if (files?.length) {
                 try {
-                    for (const file of files) {
+                    const results = files.map(async file => {
+                        const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
+
+                        if (re?.status) {
+                            return this.response.sendError(res, re.status, re.message)
+                        }
+
                         const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
 
                         const transferSyntaxUid = preliminaryDataSet.string('x00020010')
 
-                        console.log(transferSyntaxUid)
+                        const dataSet = dicomParser.parseDicom(re.file.buffer, { TransferSyntaxUID: transferSyntaxUid })
 
-                        const dataSet = dicomParser.parseDicom(file.buffer, { TransferSyntaxUID: transferSyntaxUid })
-
-                        const obj = {
+                        const metadata = {
                             patientName: dataSet.string('x00100010'),
                             patientID: dataSet.string('x00100020'),
                             studyDate: dataSet.string('x00080020'),
@@ -1233,35 +1283,25 @@ export class CenterService {
                             bodyPartExamined: dataSet.string('x00180015'),
                         }
 
-                        console.log(obj)
-                    }
+                        const path = `${centerId}/${studyId}/${genFilename(re.file)}`
+                        await this.aws.uploadS3(file, path)
 
-                    // const results = await Promise.all(files.map(async file => {
-                    //     const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
+                        return {
+                            type: re.file.mimetype,
+                            path, size: re.file.size,
+                            url: this.aws.getS3(path),
+                            metadata, transferSyntaxUid,
+                        }
+                    })
 
-                    //     if (re?.status) {
-                    //         return this.response.sendError(res, re.status, re.message)
-                    //     }
-
-                    //     const path = `${centerId}/${studyId}/${genFilename(re.file)}`
-                    //     await this.aws.uploadS3(file, path)
-
-                    //     return {
-                    //         type: re.file.mimetype,
-                    //         path, size: re.file.size,
-                    //         url: this.aws.getS3(path)
-                    //     }
-                    // }))
-
-                    // dicoms = results.filter((result): result is IFile => !!result)
+                    dicoms = await Promise.all(results)
                 } catch (err) {
-                    console.error(err)
-                    // try {
-                    //     await this.aws.removeFiles(dicoms)
-                    // } catch (err) {
-                    //     this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
-                    //     return
-                    // }
+                    try {
+                        await this.aws.removeFiles(dicoms)
+                    } catch (err) {
+                        this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
+                        return
+                    }
                 }
             }
 

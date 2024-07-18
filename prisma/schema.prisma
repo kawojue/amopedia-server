@@ -1,5 +1,5 @@
 datasource db {
-    provider = "mongodb"
+    provider = "postgresql"
     url      = env("DATABASE_URI")
 }
 
@@ -7,30 +7,48 @@ generator client {
     provider = "prisma-client-js"
 }
 
-model Adradospec {
-    id         String   @id @default(auto()) @map("_id") @db.ObjectId
+model Adspec {
+    id         String   @id @default(uuid())
     email      String   @unique
     fullname   String
     superAdmin Boolean  @default(false)
     password   String
     role       Roles
-    avatar     File?
+    avatar     Json?
     status     Status   @default(ACTIVE)
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
+
+    demographicid String?      @unique @db.Uuid
+    demographic   Demographic? @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+}
+
+model Demographic {
+    id           String        @id @default(uuid())
+    ip           String?
+    dob          DateTime?
+    gender       Gender?
+    address      String?
+    city         String?
+    state        String?
+    phone        String?
+    zip_code     String?
+    country      String?
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    patient      Patient?
+    adspec       Adspec?
+    center       Center?
+    centerAdmin  CenterAdmin?
+    practitioner Practitioner?
+
+    @@index([phone])
 }
 
 model Center {
-    id          String         @id @default(auto()) @map("_id") @db.ObjectId
+    id          String         @id @default(uuid())
     centerName  String         @unique
     email       String         @unique
-    ip          String?
-    address     String
-    city        String
-    state       String
-    phone       String
-    zip_code    String?
-    country     String
     status      Status         @default(PENDING)
     createdAt   DateTime       @default(now())
     updatedAt   DateTime       @updatedAt
@@ -39,75 +57,78 @@ model Center {
     admins      CenterAdmin[]
     practioners Practitioner[]
     studies     PatientStudy[]
+
+    demographicid String      @unique @db.Uuid
+    demographic   Demographic @relation(fields: [demographicid], references: [id], onDelete: Cascade)
 }
 
 model CenterAdmin {
-    id         String   @id @default(auto()) @map("_id") @db.ObjectId
+    id         String   @id @default(uuid())
     superAdmin Boolean  @default(false)
     fullname   String
     password   String
-    avatar     File?
-    phone      String   @unique
+    avatar     Json?
     email      String   @unique
-    center     Center   @relation(fields: [centerId], references: [id])
-    centerId   String   @unique @db.ObjectId
     role       Roles    @default(centerAdmin)
     status     Status   @default(ACTIVE)
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
+
+    centerId      String  @db.Uuid
+    demographicid String? @unique @db.Uuid
+
+    demographic Demographic? @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+    center      Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
 }
 
 model Practitioner {
-    id             String         @id @default(auto()) @map("_id") @db.ObjectId
+    id             String         @id @default(uuid())
     status         Status         @default(PENDING)
     fullname       String
-    avatar         File?
+    avatar         Json?
     type           PracType
     email          String         @unique
-    phone          String         @unique
     password       String
     affiliation    String?
     practiceNumber String         @unique
-    address        String
-    city           String
-    state          String
-    zip_code       String?
-    country        String
     createdAt      DateTime       @default(now())
     updatedAt      DateTime       @updatedAt
     role           Roles
     patientStudies PatientStudy[]
-    center         Center?        @relation(fields: [centerId], references: [id])
-    centerId       String?        @unique @db.ObjectId
 
-    @@index([fullname, email, phone])
+    centerId      String? @db.Uuid
+    demographicid String  @unique @db.Uuid
+
+    center      Center?     @relation(fields: [centerId], references: [id], onDelete: Cascade)
+    demographic Demographic @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+
+    @@index([fullname, email])
 }
 
 model Patient {
-    id            String         @id @default(auto()) @map("_id") @db.ObjectId
+    id            String         @id @default(uuid())
     mrn           String         @unique
     fullname      String
-    nin           String?        @unique
-    phone         String         @unique
+    govtId        String?        @unique
     email         String         @unique
-    dob           DateTime
-    gender        Gender?
     maritalStatus MaritalStatus?
-    address       String
-    zip_code      String?
     status        PatientStatus  @default(New)
-    center        Center         @relation(fields: [centerId], references: [id])
-    centerId      String         @unique @db.ObjectId
-    caseStudies   PatientStudy[]
     createdAt     DateTime       @default(now())
     updatedAt     DateTime       @updatedAt
+    caseStudies   PatientStudy[]
 
-    @@index([fullname, email, phone])
+    centerId      String @db.Uuid
+    demographicid String @unique @db.Uuid
+
+    demographic Demographic @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+    center      Center      @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+    @@index([fullname, email])
 }
 
 model PatientStudy {
-    id               String        @id @default(auto()) @map("_id") @db.ObjectId
-    study_id         String        @unique
+    id               String       @id @default(uuid())
+    study_id         String       @unique
     body_part        String
     priority         Priority
     modality         Modality
@@ -117,27 +138,32 @@ model PatientStudy {
     clinical_info    String?
     site             String?
     reporting_status StudyStatus?
-    access_code      String?       @unique
-    paperwork        File[]
-    dicoms           File[]
-    status           StudyStatus   @default(Unassigned)
-    createdAt        DateTime      @default(now())
-    updatedAt        DateTime      @updatedAt
-    practitioner     Practitioner? @relation(fields: [practitionerId], references: [id])
-    practitionerId   String?       @db.ObjectId
-    patient          Patient       @relation(fields: [patientId], references: [id])
-    patientId        String        @db.ObjectId
-    center           Center        @relation(fields: [centerId], references: [id])
-    centerId         String        @unique @db.ObjectId
+    access_code      String?      @unique
+    paperwork        Json[]
+    dicoms           Json[]
+    status           StudyStatus  @default(Unassigned)
+    createdAt        DateTime     @default(now())
+    updatedAt        DateTime     @updatedAt
+
+    centerId       String  @db.Uuid
+    patientId      String  @db.Uuid
+    practitionerId String? @db.Uuid
+
+    practitioner Practitioner? @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+    patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+    center       Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
     @@index([study_id, body_part, clinical_info, access_code, description])
 }
 
 model Trash {
-    id       String @id @default(auto()) @map("_id") @db.ObjectId
-    files    File[]
+    id        String   @id @default(uuid())
+    files     Json[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
     center   Center @relation(fields: [centerId], references: [id])
-    centerId String @unique @db.ObjectId
+    centerId String @db.Uuid
 }
 
 enum Status {
@@ -211,10 +237,10 @@ enum PracType {
     system
 }
 
-type File {
-    idx  String? @default(uuid())
-    size Float?
-    url  String
-    path String
-    type String?
-}
+// type File {
+//     idx  String? @default(uuid())
+//     size Float?
+//     url  String
+//     path String
+//     type String?
+// }

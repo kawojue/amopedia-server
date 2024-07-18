@@ -5,8 +5,10 @@ import {
     IsEnum, IsNotEmpty, IsOptional, MinLength,
     IsString, Matches, MaxLength, IsPhoneNumber,
 } from 'class-validator'
+import {
+    normalizePhoneNumber, titleText, toUpperCase
+} from 'helpers/transformer'
 import { EmailDTO } from 'src/auth/dto/login.dto'
-import { titleText, toUpperCase } from 'helpers/transformer'
 
 export class InviteMedicalStaffDTO extends EmailDTO {
     @ApiProperty({
@@ -99,6 +101,7 @@ export class InviteCenterAdminDTO extends EmailDTO {
     })
     @MaxLength(14)
     @IsPhoneNumber()
+    @Transform(({ value }) => normalizePhoneNumber(value))
     phone: string
 
     @ApiProperty({

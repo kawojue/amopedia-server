@@ -12,7 +12,7 @@ import { EncryptionService } from 'lib/encryption.service'
 import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
 
 @Injectable()
-export class AdradospecService {
+export class AdspecService {
     constructor(
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
@@ -27,9 +27,11 @@ export class AdradospecService {
             { state: { contains: search, mode: 'insensitive' } },
             { city: { contains: search, mode: 'insensitive' } },
         ] as ({
-            country: {
-                contains: string
-                mode: "insensitive"
+            demographic: {
+                country: {
+                    contains: string;
+                    mode: "insensitive"
+                }
             }
         } | {
             email: {
@@ -37,23 +39,27 @@ export class AdradospecService {
                 mode: "insensitive"
             }
         } | {
-            state: {
-                contains: string
-                mode: "insensitive"
+            demographic: {
+                state: {
+                    contains: string
+                    mode: "insensitive"
+                }
             }
         } | {
-            city: {
-                contains: string
-                mode: "insensitive"
+            demographic: {
+                city: {
+                    contains: string
+                    mode: "insensitive"
+                }
             }
         })[]
 
         return OR
     }
 
-    async signup(res: Response, { email, password, fullname }: SignupDTO) {
+    async signup(res: Response, { email, password, fullname, }: SignupDTO) {
         try {
-            const admin = await this.prisma.adradospec.findUnique({
+            const admin = await this.prisma.adspec.findUnique({
                 where: { email }
             })
 
@@ -63,7 +69,7 @@ export class AdradospecService {
 
             password = await this.encryption.hashAsync(password, 12)
 
-            await this.prisma.adradospec.create({
+            await this.prisma.adspec.create({
                 data: { email, password, fullname, role: 'admin', superAdmin: true }
             })
 
@@ -77,36 +83,36 @@ export class AdradospecService {
 
     async login(res: Response, { email, password }: LoginDTO) {
         try {
-            const adradospec = await this.prisma.adradospec.findUnique({
+            const adspec = await this.prisma.adspec.findUnique({
                 where: { email }
             })
 
-            if (!adradospec) {
+            if (!adspec) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email or password')
             }
 
-            if (adradospec.status === "SUSPENDED") {
+            if (adspec.status === "SUSPENDED") {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Your account has been suspended")
             }
 
-            const isMatch = await this.encryption.compareAsync(password, adradospec.password)
+            const isMatch = await this.encryption.compareAsync(password, adspec.password)
             if (!isMatch) {
                 return this.response.sendError(res, StatusCodes.Unauthorized, 'Incorrect password')
             }
 
             const access_token = await this.misc.generateNewAccessToken({
-                sub: adradospec.id,
-                role: adradospec.role,
-                modelName: 'adradospec',
-                status: adradospec.status,
+                sub: adspec.id,
+                role: adspec.role,
+                modelName: 'adspec',
+                status: adspec.status,
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: {
-                    role: adradospec.role,
-                    email: adradospec.email,
-                    avatar: adradospec.avatar,
-                    fullname: adradospec.fullname,
+                    role: adspec.role,
+                    email: adspec.email,
+                    avatar: adspec.avatar,
+                    fullname: adspec.fullname,
                 },
                 access_token
             })
@@ -115,17 +121,17 @@ export class AdradospecService {
         }
     }
 
-    async inviteNewAdrasdospec(
+    async inviteNewAdspec(
         res: Response,
         { sub }: ExpressUser,
         { email, fullname, role, password }: InviteDTO,
     ) {
         try {
-            const adradospec = await this.prisma.adradospec.findUnique({
+            const adspec = await this.prisma.adspec.findUnique({
                 where: { id: sub }
             })
 
-            const isExist = await this.prisma.adradospec.findUnique({
+            const isExist = await this.prisma.adspec.findUnique({
                 where: { email }
             })
 
@@ -133,13 +139,13 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Member with the same email already exists")
             }
 
-            if (!adradospec.superAdmin && role === "admin") {
+            if (!adspec.superAdmin && role === "admin") {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Only the Super Admin can invite an Admin")
             }
 
             const pswd = await this.encryption.hashAsync(password, 12)
 
-            await this.prisma.adradospec.create({
+            await this.prisma.adspec.create({
                 data: {
                     email, fullname,
                     superAdmin: false,
@@ -156,8 +162,8 @@ export class AdradospecService {
         }
     }
 
-    async fetchAdradospec(res: Response) {
-        const adradospecs = await this.prisma.adradospec.findMany({
+    async fetchAdspec(res: Response) {
+        const adspecs = await this.prisma.adspec.findMany({
             select: {
                 id: true,
                 email: true,
@@ -168,7 +174,7 @@ export class AdradospecService {
             orderBy: { updatedAt: 'desc' }
         })
 
-        this.response.sendSuccess(res, StatusCodes.OK, { data: adradospecs })
+        this.response.sendSuccess(res, StatusCodes.OK, { data: adspecs })
     }
 
     async fetchOrganizations(
@@ -241,7 +247,9 @@ export class AdradospecService {
                     admins: {
                         where: { superAdmin: true },
                         select: {
-                            phone: true,
+                            demographic: {
+                                select: { phone: true },
+                            },
                             email: true,
                             avatar: true,
                             fullname: true,
@@ -324,7 +332,7 @@ export class AdradospecService {
                     type: 'system',
                     OR: [
                         { fullname: { contains: search, mode: 'insensitive' } },
-                        ...this.or(search),
+                        ...this.or(search)
                     ]
                 },
                 take: limit,
@@ -413,8 +421,9 @@ export class AdradospecService {
             ])
 
             let totalDicomCounts = 0
-            await Promise.all(caseStudies.map(async patient => {
-                const dicomCounts = await Promise.all(patient.dicoms.map(async dicom => {
+            await Promise.all(caseStudies.map(async (patient) => {
+                const dicomCounts = await Promise.all(patient.dicoms.map(async (dicom) => {
+                    // @ts-ignore
                     if (dicom?.path) {
                         return 1
                     } else {

@@ -1,11 +1,19 @@
 import {
-    IsOptional, IsPhoneNumber,
-    MaxLength, IsString, IsEmail,
+    IsEmail,
+    IsString,
+    MaxLength,
+    IsOptional,
+    IsPhoneNumber,
 } from 'class-validator'
+import {
+    titleText,
+    toLowerCase,
+    toUpperCase,
+    normalizePhoneNumber,
+} from 'helpers/transformer'
 import { PasswordDTO } from './password.dto'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
-import { titleText, toLowerCase, toUpperCase } from 'helpers/transformer'
 
 export class OrganizationSignupDTO extends PasswordDTO {
     @ApiProperty({
@@ -37,6 +45,7 @@ export class OrganizationSignupDTO extends PasswordDTO {
     })
     @MaxLength(14)
     @IsPhoneNumber()
+    @Transform(({ value }) => normalizePhoneNumber(value))
     phone: string
 
     @ApiProperty({
@@ -97,6 +106,7 @@ export class PractitionerSignupDTO extends PasswordDTO {
     })
     @MaxLength(14)
     @IsPhoneNumber()
+    @Transform(({ value }) => normalizePhoneNumber(value))
     phone: string
 
     @ApiProperty({

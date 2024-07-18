@@ -4,6 +4,7 @@ import {
     S3Client, PutObjectCommand, PutObjectCommandInput,
 } from '@aws-sdk/client-s3'
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 
 @Injectable()
 export class AwsService {
@@ -109,10 +110,12 @@ export class AwsService {
         }
     }
 
-    async removeFiles(files: IFile[]) {
+    async removeFiles(files: Prisma.JsonArray) {
         if (files.length > 0) {
             for (const file of files) {
+                // @ts-ignore
                 if (file?.path) {
+                    // @ts-ignore
                     await this.deleteS3(file.path)
                 }
             }

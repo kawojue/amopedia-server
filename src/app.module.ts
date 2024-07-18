@@ -6,15 +6,15 @@ import { AuthModule } from './auth/auth.module'
 import { AppController } from './app.controller'
 import { PrismaService } from 'lib/prisma.service'
 import { CenterModule } from './center/center.module'
+import { AdspecModule } from './adspec/adspec.module'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
-import { AdradospecModule } from './adradospec/adradospec.module'
 
 @Module({
   imports: [
     AuthModule,
     CenterModule,
-    AdradospecModule,
+    AdspecModule,
   ],
   controllers: [AppController],
   providers: [

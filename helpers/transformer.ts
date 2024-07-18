@@ -72,9 +72,40 @@ export const getFileExtension = (file: Express.Multer.File | string): string | u
             extension = 'doc'
             break
         default:
-            console.warn(`Unsupported MIME type: ${mimetype}`)
-            break
+            throw new Error(`Unsupported MIME type: ${mimetype}`)
     }
 
     return extension
+}
+
+export const removeNullFields = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(removeNullFields)
+    } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+        return Object.keys(obj).reduce((acc, key) => {
+            const value = obj[key]
+            if (value !== null) {
+                acc[key] = removeNullFields(value)
+            }
+            return acc
+        }, {} as { [key: string]: any })
+    } else {
+        return obj
+    }
+}
+
+export const normalizePhoneNumber = (phoneNumber: string): string => {
+    let normalized = phoneNumber.replace(/\D/g, '')
+
+    if (normalized.startsWith('0')) {
+        normalized = normalized.slice(1)
+    }
+
+    if (normalized.startsWith('00')) {
+        normalized = normalized.slice(2)
+    } else if (normalized.startsWith('+')) {
+        normalized = normalized.slice(1)
+    }
+
+    return normalized
 }

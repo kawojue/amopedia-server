@@ -18,17 +18,6 @@ export class MiscService {
 
     handleServerError(res: Response, err?: any, msg?: string) {
         console.error(err)
-        return this.response.sendError(res, StatusCodes.InternalServerError, msg || err?.message || 'Something went wrong')
-    }
-
-    async validateAndDecodeToken(token: string) {
-        try {
-            return await this.jwtService.verifyAsync(token, {
-                secret: process.env.JWT_SECRET
-            })
-        } catch (err) {
-            console.error(err)
-            return null
-        }
+        this.response.sendError(res, StatusCodes.InternalServerError, msg || err?.message || 'Something went wrong')
     }
 }
