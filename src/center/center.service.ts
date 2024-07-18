@@ -17,7 +17,7 @@ import { genFilename, genPassword } from 'helpers/generator'
 import {
     DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
 } from './dto/study.dto'
-import { toUpperCase, transformMRN } from 'helpers/transformer'
+import { removeNullFields, toUpperCase, transformMRN } from 'helpers/transformer'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
 import {
     ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
@@ -430,7 +430,7 @@ export class CenterService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: newPatient,
+                data: removeNullFields(newPatient),
                 message: "New patient has been added to the record"
             })
         } catch (err) {
@@ -479,7 +479,7 @@ export class CenterService {
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: updatedPatient,
+                data: removeNullFields(updatedPatient),
                 message: "Patient has been updated"
             })
         } catch (err) {

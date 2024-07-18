@@ -7,8 +7,31 @@ generator client {
     provider = "prisma-client-js"
 }
 
+model Demographic {
+    id        String    @id @default(uuid()) @db.Uuid
+    ip        String?
+    dob       DateTime?
+    gender    Gender?
+    address   String?
+    city      String?
+    state     String?
+    phone     String?
+    zip_code  String?
+    country   String?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    adspec       Adspec?
+    center       Center?
+    patient      Patient?
+    centerAdmin  CenterAdmin?
+    practitioner Practitioner?
+
+    @@index([phone])
+}
+
 model Adspec {
-    id         String   @id @default(uuid())
+    id         String   @id @default(uuid()) @db.Uuid
     email      String   @unique
     fullname   String
     superAdmin Boolean  @default(false)
@@ -19,51 +42,30 @@ model Adspec {
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
 
-    demographicid String?      @unique @db.Uuid
-    demographic   Demographic? @relation(fields: [demographicid], references: [id], onDelete: Cascade)
-}
-
-model Demographic {
-    id           String        @id @default(uuid())
-    ip           String?
-    dob          DateTime?
-    gender       Gender?
-    address      String?
-    city         String?
-    state        String?
-    phone        String?
-    zip_code     String?
-    country      String?
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
-    patient      Patient?
-    adspec       Adspec?
-    center       Center?
-    centerAdmin  CenterAdmin?
-    practitioner Practitioner?
-
-    @@index([phone])
+    demographicId String       @unique @db.Uuid
+    demographic   Demographic? @relation(fields: [demographicId], references: [id], onDelete: Cascade)
 }
 
 model Center {
-    id          String         @id @default(uuid())
-    centerName  String         @unique
-    email       String         @unique
-    status      Status         @default(PENDING)
-    createdAt   DateTime       @default(now())
-    updatedAt   DateTime       @updatedAt
+    id         String   @id @default(uuid()) @db.Uuid
+    centerName String   @unique
+    email      String   @unique
+    status     Status   @default(PENDING)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
     bin         Trash[]
     patients    Patient[]
     admins      CenterAdmin[]
     practioners Practitioner[]
     studies     PatientStudy[]
 
-    demographicid String      @unique @db.Uuid
-    demographic   Demographic @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+    demographicId String      @unique @db.Uuid
+    demographic   Demographic @relation(fields: [demographicId], references: [id], onDelete: Cascade)
 }
 
 model CenterAdmin {
-    id         String   @id @default(uuid())
+    id         String   @id @default(uuid()) @db.Uuid
     superAdmin Boolean  @default(false)
     fullname   String
     password   String
@@ -75,38 +77,39 @@ model CenterAdmin {
     updatedAt  DateTime @updatedAt
 
     centerId      String  @db.Uuid
-    demographicid String? @unique @db.Uuid
+    demographicId String? @unique @db.Uuid
 
-    demographic Demographic? @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+    demographic Demographic? @relation(fields: [demographicId], references: [id], onDelete: Cascade)
     center      Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
 }
 
 model Practitioner {
-    id             String         @id @default(uuid())
-    status         Status         @default(PENDING)
+    id             String   @id @default(uuid()) @db.Uuid
+    status         Status   @default(PENDING)
     fullname       String
     avatar         Json?
     type           PracType
-    email          String         @unique
+    email          String   @unique
     password       String
     affiliation    String?
-    practiceNumber String         @unique
-    createdAt      DateTime       @default(now())
-    updatedAt      DateTime       @updatedAt
+    practiceNumber String   @unique
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
     role           Roles
+
     patientStudies PatientStudy[]
 
     centerId      String? @db.Uuid
-    demographicid String  @unique @db.Uuid
+    demographicId String  @unique @db.Uuid
 
     center      Center?     @relation(fields: [centerId], references: [id], onDelete: Cascade)
-    demographic Demographic @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+    demographic Demographic @relation(fields: [demographicId], references: [id], onDelete: Cascade)
 
     @@index([fullname, email])
 }
 
 model Patient {
-    id            String         @id @default(uuid())
+    id            String         @id @default(uuid()) @db.Uuid
     mrn           String         @unique
     fullname      String
     govtId        String?        @unique
@@ -115,19 +118,20 @@ model Patient {
     status        PatientStatus  @default(New)
     createdAt     DateTime       @default(now())
     updatedAt     DateTime       @updatedAt
-    caseStudies   PatientStudy[]
+
+    caseStudies PatientStudy[]
 
     centerId      String @db.Uuid
-    demographicid String @unique @db.Uuid
+    demographicId String @unique @db.Uuid
 
-    demographic Demographic @relation(fields: [demographicid], references: [id], onDelete: Cascade)
+    demographic Demographic @relation(fields: [demographicId], references: [id], onDelete: Cascade)
     center      Center      @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
     @@index([fullname, email])
 }
 
 model PatientStudy {
-    id               String       @id @default(uuid())
+    id               String       @id @default(uuid()) @db.Uuid
     study_id         String       @unique
     body_part        String
     priority         Priority
@@ -157,7 +161,7 @@ model PatientStudy {
 }
 
 model Trash {
-    id        String   @id @default(uuid())
+    id        String   @id @default(uuid()) @db.Uuid
     files     Json[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -236,11 +240,3 @@ enum PracType {
     center
     system
 }
-
-// type File {
-//     idx  String? @default(uuid())
-//     size Float?
-//     url  String
-//     path String
-//     type String?
-// }
