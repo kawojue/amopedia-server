@@ -8,7 +8,7 @@ import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
-import { FetchCentersDTO, ToggleStatusDTO } from './dto/org.dto'
+import { FetchCentersDTO, ToggleStatusDTO } from './dto/center.dto'
 import {
   Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
 } from '@nestjs/common'

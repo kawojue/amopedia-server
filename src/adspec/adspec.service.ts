@@ -9,7 +9,7 @@ import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
-import { FetchCentersDTO, ToggleStatusDTO } from './dto/org.dto'
+import { FetchCentersDTO, ToggleStatusDTO } from './dto/center.dto'
 
 @Injectable()
 export class AdspecService {

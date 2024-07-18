@@ -1,6 +1,6 @@
 import { IsEnum } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
-import { FetchCentersDTO } from './org.dto'
+import { FetchCentersDTO } from './center.dto'
 
 enum Role {
     doctor = "doctor",
