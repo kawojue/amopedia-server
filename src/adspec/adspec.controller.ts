@@ -18,10 +18,10 @@ import {
 export class AdspecController {
   constructor(private readonly adspecService: AdspecService) { }
 
-  // @Post('/signup')
-  // async signup(@Res() res: Response, @Body() body: SignupDTO) {
-  //   await this.adspecService.signup(res, body)
-  // }
+  @Post('/signup')
+  async signup(@Res() res: Response, @Body() body: SignupDTO) {
+    await this.adspecService.signup(res, body)
+  }
 
   @Post('/login')
   async login(@Res() res: Response, @Body() body: LoginDTO) {
