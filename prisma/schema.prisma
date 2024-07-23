@@ -42,7 +42,7 @@ model Adspec {
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
 
-    demographicId String       @unique @db.Uuid
+    demographicId String?      @unique @db.Uuid
     demographic   Demographic? @relation(fields: [demographicId], references: [id], onDelete: Cascade)
 }
 

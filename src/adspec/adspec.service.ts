@@ -70,7 +70,13 @@ export class AdspecService {
             password = await this.encryption.hashAsync(password, 12)
 
             await this.prisma.adspec.create({
-                data: { email, password, fullname, role: 'admin', superAdmin: true }
+                data: {
+                    email,
+                    password,
+                    fullname,
+                    role: 'admin',
+                    superAdmin: true,
+                }
             })
 
             this.response.sendSuccess(res, StatusCodes.Created, {
