@@ -34,6 +34,7 @@ export class FetchSPDTO extends InfiniteScrollWithSearchDTO {
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
         default: 0,
+        required: false,
     })
     @IsOptional()
     startDate?: string
@@ -41,6 +42,7 @@ export class FetchSPDTO extends InfiniteScrollWithSearchDTO {
     @ApiProperty({
         example: '2024-05-02T00:00:00.000Z',
         default: new Date(),
+        required: false,
     })
     @IsOptional()
     endDate?: string
@@ -48,21 +50,24 @@ export class FetchSPDTO extends InfiniteScrollWithSearchDTO {
 
 export class FetchPatientStudyDTO extends FetchSPDTO {
     @ApiProperty({
-        enum: StudyStatus
+        enum: StudyStatus,
+        required: false,
     })
     @IsOptional()
     @IsEnum(StudyStatus)
     status: StudyStatus
 
     @ApiProperty({
-        enum: Modality
+        enum: Modality,
+        required: false,
     })
     @IsOptional()
     @IsEnum(Modality)
     modality: Modality
 
     @ApiProperty({
-        enum: Priority
+        enum: Priority,
+        required: false,
     })
     @IsOptional()
     @IsEnum(Priority)
@@ -71,7 +76,8 @@ export class FetchPatientStudyDTO extends FetchSPDTO {
 
 export class FetchPatientDTO extends FetchSPDTO {
     @ApiProperty({
-        enum: PatientStatus
+        enum: PatientStatus,
+        required: false,
     })
     @IsOptional()
     @IsEnum(PatientStatus)
