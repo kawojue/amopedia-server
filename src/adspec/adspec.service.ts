@@ -22,10 +22,10 @@ export class AdspecService {
 
     private or(search: string) {
         const OR = [
-            { country: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { state: { contains: search, mode: 'insensitive' } },
-            { city: { contains: search, mode: 'insensitive' } },
+            { demographic: { country: { contains: search, mode: 'insensitive' } } },
+            { demographic: { email: { contains: search, mode: 'insensitive' } } },
+            { demographic: { state: { contains: search, mode: 'insensitive' } } },
+            { demographic: { city: { contains: search, mode: 'insensitive' } } },
         ] as ({
             demographic: {
                 country: {
