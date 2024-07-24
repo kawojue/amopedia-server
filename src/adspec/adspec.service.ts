@@ -22,8 +22,8 @@ export class AdspecService {
 
     private or(search: string) {
         const OR = [
+            { email: { contains: search, mode: 'insensitive' } },
             { demographic: { country: { contains: search, mode: 'insensitive' } } },
-            { demographic: { email: { contains: search, mode: 'insensitive' } } },
             { demographic: { state: { contains: search, mode: 'insensitive' } } },
             { demographic: { city: { contains: search, mode: 'insensitive' } } },
         ] as ({
@@ -215,7 +215,19 @@ export class AdspecService {
 
             const centers = await this.prisma.center.findMany({
                 // @ts-ignore
-                where: commonWhere,
+                where: {
+                    OR: [
+                        {
+                            demographic: {
+                                OR: [
+                                    { country: { contains: search, mode: 'insensitive' } },
+                                    { state: { contains: search, mode: 'insensitive' } },
+                                    { city: { contains: search, mode: 'insensitive' } },
+                                ]
+                            }
+                        }
+                    ]
+                },
                 take: limit,
                 skip: offset,
                 orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
