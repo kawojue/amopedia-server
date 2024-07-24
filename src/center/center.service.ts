@@ -1,3 +1,18 @@
+import {
+    PatientStudyDTO,
+    DesignateStudyDTO,
+    EditPatientStudyDTO,
+} from './dto/study.dto'
+import {
+    ChartDTO,
+    FetchStaffDTO,
+    FetchPatientDTO,
+    FetchPatientStudyDTO,
+} from './dto/fetch.dto'
+import {
+    InviteCenterAdminDTO,
+    InviteMedicalStaffDTO
+} from './dto/invite.dto'
 import { Response } from 'express'
 import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
@@ -5,23 +20,14 @@ import * as dicomParser from 'dicom-parser'
 import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
-import {
-    InviteCenterAdminDTO, InviteMedicalStaffDTO
-} from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { $Enums, Roles, StudyStatus } from '@prisma/client'
 import { genFilename, genPassword } from 'helpers/generator'
-import {
-    DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
-} from './dto/study.dto'
-import { removeNullFields, toUpperCase, transformMRN } from 'helpers/transformer'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
-import {
-    ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
-} from './dto/fetch.dto'
+import { removeNullFields, toUpperCase, transformMRN } from 'helpers/transformer'
 
 @Injectable()
 export class CenterService {
@@ -275,7 +281,7 @@ export class CenterService {
             const [
                 patientCounts, patients,
                 pracCounts, adminCounts
-            ] = await this.prisma.$transaction([
+            ] = await Promise.all([
                 this.prisma.patient.count({ where: { centerId } }),
                 this.prisma.patient.findMany({
                     where: { centerId },
@@ -1152,7 +1158,7 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Practitioner does not exist")
             }
 
-            await this.prisma.$transaction([
+            await Promise.all([
                 this.prisma.practitioner.update({
                     where: { id: practitionerId },
                     data: {

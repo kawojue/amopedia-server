@@ -23,34 +23,38 @@ export class AdspecService {
     private or(search: string) {
         const OR = [
             { email: { contains: search, mode: 'insensitive' } },
-            { demographic: { country: { contains: search, mode: 'insensitive' } } },
-            { demographic: { state: { contains: search, mode: 'insensitive' } } },
-            { demographic: { city: { contains: search, mode: 'insensitive' } } },
-        ] as ({
-            demographic: {
-                country: {
-                    contains: string
-                    mode: "insensitive"
+            {
+                demographic: {
+                    OR: [
+                        { country: { contains: search, mode: 'insensitive' } },
+                        { state: { contains: search, mode: 'insensitive' } },
+                        { city: { contains: search, mode: 'insensitive' } },
+                    ]
                 }
             }
-        } | {
+        ] as ({
             email: {
                 contains: string
                 mode: "insensitive"
             }
         } | {
             demographic: {
-                state: {
-                    contains: string
-                    mode: "insensitive"
-                }
-            }
-        } | {
-            demographic: {
-                city: {
-                    contains: string
-                    mode: "insensitive"
-                }
+                OR: ({
+                    country: {
+                        contains: string
+                        mode: "insensitive"
+                    }
+                } | {
+                    state: {
+                        contains: string
+                        mode: "insensitive"
+                    }
+                } | {
+                    city: {
+                        contains: string
+                        mode: "insensitive"
+                    }
+                })[]
             }
         })[]
 
@@ -215,19 +219,7 @@ export class AdspecService {
 
             const centers = await this.prisma.center.findMany({
                 // @ts-ignore
-                where: {
-                    OR: [
-                        {
-                            demographic: {
-                                OR: [
-                                    { country: { contains: search, mode: 'insensitive' } },
-                                    { state: { contains: search, mode: 'insensitive' } },
-                                    { city: { contains: search, mode: 'insensitive' } },
-                                ]
-                            }
-                        }
-                    ]
-                },
+                where: commonWhere,
                 take: limit,
                 skip: offset,
                 orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
@@ -300,7 +292,7 @@ export class AdspecService {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Facility not found')
             }
 
-            await this.prisma.$transaction([
+            await Promise.all([
                 this.prisma.center.update({
                     where: { id: centerId },
                     data: { status }
@@ -429,7 +421,7 @@ export class AdspecService {
             const [
                 patientCounts, facilityCounts,
                 caseStudyCounts, caseStudies,
-            ] = await this.prisma.$transaction([
+            ] = await Promise.all([
                 this.prisma.patient.count(),
                 this.prisma.center.count(),
                 this.prisma.patientStudy.count(),
@@ -471,7 +463,10 @@ export class AdspecService {
                 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
             ]
 
-            const chart: { label: string; count: string }[] = []
+            const chart: {
+                label: string
+                count: string
+            }[] = []
 
             if (q === "weekdays") {
                 labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
