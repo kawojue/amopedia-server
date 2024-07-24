@@ -16,7 +16,8 @@ enum Chart {
 
 export class FetchStaffDTO extends InfiniteScrollWithSearchDTO {
     @ApiProperty({
-        enum: Role
+        enum: Role,
+        required: false,
     })
     @IsEnum(Role)
     role: Role
@@ -24,7 +25,8 @@ export class FetchStaffDTO extends InfiniteScrollWithSearchDTO {
 
 export class ChartDTO {
     @ApiProperty({
-        enum: Chart
+        enum: Chart,
+        required: false,
     })
     @IsEnum(Chart)
     q: Chart

@@ -9,7 +9,8 @@ enum Sort {
 
 export class SortByDTO {
     @ApiProperty({
-        enum: Sort
+        enum: Sort,
+        required: false,
     })
     @IsEnum(Sort)
     @IsOptional()
