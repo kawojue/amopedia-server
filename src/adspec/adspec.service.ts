@@ -29,7 +29,7 @@ export class AdspecService {
         ] as ({
             demographic: {
                 country: {
-                    contains: string;
+                    contains: string
                     mode: "insensitive"
                 }
             }
