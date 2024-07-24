@@ -1,3 +1,15 @@
+import {
+  Req,
+  Res,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Patch,
+  UseGuards,
+  Controller,
+} from '@nestjs/common'
 import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/jwt/role.decorator'
@@ -9,9 +21,6 @@ import { FetchPractitionersDTO } from './dto/prac.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 import { FetchCentersDTO, ToggleStatusDTO } from './dto/center.dto'
-import {
-  Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards
-} from '@nestjs/common'
 
 @Controller('adspec')
 @ApiTags("System Admin & Specialist")

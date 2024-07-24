@@ -1,28 +1,47 @@
+import {
+  Req,
+  Res,
+  Get,
+  Put,
+  Post,
+  Body,
+  Param,
+  Query,
+  Patch,
+  UseGuards,
+  Controller,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+} from '@nestjs/swagger'
+import {
+  PatientStudyDTO,
+  DesignateStudyDTO,
+  EditPatientStudyDTO,
+} from './dto/study.dto'
+import {
+  ChartDTO,
+  FetchStaffDTO,
+  FetchPatientDTO,
+  FetchPatientStudyDTO,
+} from './dto/fetch.dto'
+import {
+  InviteCenterAdminDTO,
+  InviteMedicalStaffDTO
+} from './dto/invite.dto'
 import { Response } from 'express'
 import { Roles } from '@prisma/client'
-import {
-  ApiBearerAuth, ApiOperation, ApiTags
-} from '@nestjs/swagger'
 import { Role } from 'src/jwt/role.decorator'
-import {
-  InviteCenterAdminDTO, InviteMedicalStaffDTO
-} from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { toUpperCase } from 'helpers/transformer'
-import {
-  Req, Res, UploadedFiles, UseGuards, UseInterceptors,
-  Body, Controller, Get, Param, Patch, Post, Put, Query,
-} from '@nestjs/common'
-import {
-  DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
-} from './dto/study.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
-import {
-  ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
-} from './dto/fetch.dto'
 
 @ApiBearerAuth()
 @ApiTags('Center')

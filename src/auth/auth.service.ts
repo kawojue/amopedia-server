@@ -1,3 +1,7 @@
+import {
+    OrganizationSignupDTO,
+    PractitionerSignupDTO,
+} from './dto/signup.dto'
 import { v4 as uuidv4 } from 'uuid'
 import { validateFile } from 'utils/file'
 import { Request, Response } from 'express'
@@ -13,7 +17,6 @@ import { ChangePasswordDTO } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { OrganizationSignupDTO, PractitionerSignupDTO } from './dto/signup.dto'
 
 @Injectable()
 export class AuthService {

@@ -1,16 +1,33 @@
+import {
+  Req,
+  Res,
+  Get,
+  Put,
+  Post,
+  Body,
+  Query,
+  Patch,
+  UseGuards,
+  Controller,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+} from '@nestjs/swagger'
+import {
+  OrganizationSignupDTO,
+  PractitionerSignupDTO,
+} from './dto/signup.dto'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 import { DownloadFileDTO } from './dto/file'
-import {
-  Body, UploadedFile, Post, Put, Req, Patch, Query,
-  Controller, UseGuards, Res, UseInterceptors, Get,
-} from '@nestjs/common'
 import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ChangePasswordDTO } from './dto/password.dto'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
-import { OrganizationSignupDTO, PractitionerSignupDTO } from './dto/signup.dto'
 
 @ApiTags("Auth")
 @Controller('auth')
