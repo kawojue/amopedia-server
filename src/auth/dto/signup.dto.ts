@@ -3,7 +3,6 @@ import {
     IsString,
     MaxLength,
     IsOptional,
-    IsPhoneNumber,
 } from 'class-validator'
 import {
     titleText,
@@ -44,7 +43,6 @@ export class OrganizationSignupDTO extends PasswordDTO {
         example: '+2348131911964'
     })
     @MaxLength(14)
-    @IsPhoneNumber()
     @Transform(({ value }) => normalizePhoneNumber(value))
     phone: string
 
@@ -105,7 +103,6 @@ export class PractitionerSignupDTO extends PasswordDTO {
         example: '+2348131911964'
     })
     @MaxLength(14)
-    @IsPhoneNumber()
     @Transform(({ value }) => normalizePhoneNumber(value))
     phone: string
 

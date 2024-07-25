@@ -1,13 +1,20 @@
+import {
+    IsEnum,
+    Matches,
+    IsString,
+    MaxLength,
+    MinLength,
+    IsNotEmpty,
+    IsOptional,
+} from 'class-validator'
+import {
+    titleText,
+    toUpperCase,
+    normalizePhoneNumber,
+} from 'helpers/transformer'
 import { Profession } from 'enums/base'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
-import {
-    IsEnum, IsNotEmpty, IsOptional, MinLength,
-    IsString, Matches, MaxLength, IsPhoneNumber,
-} from 'class-validator'
-import {
-    normalizePhoneNumber, titleText, toUpperCase
-} from 'helpers/transformer'
 import { EmailDTO } from 'src/auth/dto/login.dto'
 
 export class InviteMedicalStaffDTO extends EmailDTO {
@@ -23,7 +30,6 @@ export class InviteMedicalStaffDTO extends EmailDTO {
         example: '+2348131911964'
     })
     @MaxLength(14)
-    @IsPhoneNumber()
     phone: string
 
     @ApiProperty({
@@ -100,7 +106,6 @@ export class InviteCenterAdminDTO extends EmailDTO {
         example: '+2348131911964'
     })
     @MaxLength(14)
-    @IsPhoneNumber()
     @Transform(({ value }) => normalizePhoneNumber(value))
     phone: string
 

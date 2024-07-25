@@ -1,6 +1,9 @@
 import {
-    IsEmail, IsOptional, IsString,
-    IsPhoneNumber, IsEnum, MaxLength,
+    IsEnum,
+    IsEmail,
+    IsString,
+    MaxLength,
+    IsOptional,
 } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
@@ -28,7 +31,6 @@ export class AddPatientDTO {
         example: '+2348131911964'
     })
     @MaxLength(14)
-    @IsPhoneNumber()
     phone: string
 
     @ApiProperty({
