@@ -92,8 +92,8 @@ export class CenterService {
                 centerId,
                 OR: [
                     { email: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
                     { fullname: { contains: search, mode: 'insensitive' } },
+                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
                 ]
             }
 
@@ -109,6 +109,7 @@ export class CenterService {
                     status: true,
                     fullname: true,
                     createdAt: true,
+                    demographic: true,
                 },
                 orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
             })
@@ -801,8 +802,14 @@ export class CenterService {
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
                     { govtId: { contains: search, mode: 'insensitive' } },
-                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
-                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 createdAt: dateFilter
             }
@@ -816,8 +823,14 @@ export class CenterService {
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
                     { govtId: { contains: search, mode: 'insensitive' } },
-                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
-                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 createdAt: dateFilter
             },
@@ -859,8 +872,14 @@ export class CenterService {
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
                     { govtId: { contains: search, mode: 'insensitive' } },
-                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
-                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 updatedAt: dateFilter,
             }
@@ -874,8 +893,14 @@ export class CenterService {
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
                     { govtId: { contains: search, mode: 'insensitive' } },
-                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
-                    { demographic: { address: { contains: search, mode: 'insensitive' } } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 updatedAt: dateFilter,
             },

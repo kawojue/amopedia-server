@@ -222,6 +222,7 @@ export class AdspecService {
                 where: commonWhere,
                 take: limit,
                 skip: offset,
+                inclde: { demographic: true },
                 orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
             })
 
@@ -257,12 +258,10 @@ export class AdspecService {
                     admins: {
                         where: { superAdmin: true },
                         select: {
-                            demographic: {
-                                select: { phone: true },
-                            },
                             email: true,
                             avatar: true,
                             fullname: true,
+                            demographic: true,
                         }
                     }
                 }
@@ -347,6 +346,7 @@ export class AdspecService {
                 },
                 take: limit,
                 skip: offset,
+                include: { demographic: true },
                 orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
             })
 
@@ -373,15 +373,14 @@ export class AdspecService {
         try {
             const practitioner = await this.prisma.practitioner.findUnique({
                 where: { id: practitionerId, type: 'system' },
+                include: { demographic: true },
             })
 
             if (!practitioner) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Practitioner not found')
             }
 
-            this.response.sendSuccess(res, StatusCodes.OK, {
-                data: practitioner
-            })
+            this.response.sendSuccess(res, StatusCodes.OK, { data: practitioner })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error getting practitioner")
         }
