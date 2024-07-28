@@ -505,7 +505,8 @@ export class CenterService {
     ) {
         try {
             const patient = await this.prisma.patient.findUnique({
-                where: { mrn, centerId }
+                where: { mrn, centerId },
+                include: { demographic: true }
             })
 
             if (!patient) {
@@ -1245,6 +1246,10 @@ export class CenterService {
         files: Array<Express.Multer.File>
     ) {
         try {
+            if (files.length === 0) {
+                return this.response.sendError(res, StatusCodes.BadRequest, "No Dicom files selected")
+            }
+
             const study = await this.prisma.patientStudy.findUnique({
                 where: {
                     centerId,
@@ -1257,54 +1262,52 @@ export class CenterService {
             }
 
             let dicoms = []
-            if (files?.length) {
-                try {
-                    const results = files.map(async file => {
-                        const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
+            try {
+                const results = files.map(async file => {
+                    const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
 
-                        if (re?.status) {
-                            return this.response.sendError(res, re.status, re.message)
-                        }
-
-                        const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
-
-                        const transferSyntaxUid = preliminaryDataSet.string('x00020010')
-
-                        const dataSet = dicomParser.parseDicom(re.file.buffer, { TransferSyntaxUID: transferSyntaxUid })
-
-                        const metadata = {
-                            patientName: dataSet.string('x00100010'),
-                            patientID: dataSet.string('x00100020'),
-                            studyDate: dataSet.string('x00080020'),
-                            modality: dataSet.string('x00080060'),
-                            studyDescription: dataSet.string('x00081030'),
-                            seriesDescription: dataSet.string('x0008103e'),
-                            institutionName: dataSet.string('x00080080'),
-                            referringPhysicianName: dataSet.string('x00080090'),
-                            patientBirthDate: dataSet.string('x00100030'),
-                            patientSex: dataSet.string('x00100040'),
-                            bodyPartExamined: dataSet.string('x00180015'),
-                        }
-
-                        const path = `${centerId}/${studyId}/${genFilename(re.file)}`
-                        await this.aws.uploadS3(file, path)
-
-                        return {
-                            type: re.file.mimetype,
-                            path, size: re.file.size,
-                            url: this.aws.getS3(path),
-                            metadata, transferSyntaxUid,
-                        }
-                    })
-
-                    dicoms = await Promise.all(results)
-                } catch (err) {
-                    try {
-                        await this.aws.removeFiles(dicoms)
-                    } catch (err) {
-                        this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
-                        return
+                    if (re?.status) {
+                        return this.response.sendError(res, re.status, re.message)
                     }
+
+                    const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
+
+                    const transferSyntaxUid = preliminaryDataSet.string('x00020010')
+
+                    const dataSet = dicomParser.parseDicom(re.file.buffer, { TransferSyntaxUID: transferSyntaxUid })
+
+                    const metadata = {
+                        patientName: dataSet.string('x00100010'),
+                        patientID: dataSet.string('x00100020'),
+                        studyDate: dataSet.string('x00080020'),
+                        modality: dataSet.string('x00080060'),
+                        studyDescription: dataSet.string('x00081030'),
+                        seriesDescription: dataSet.string('x0008103e'),
+                        institutionName: dataSet.string('x00080080'),
+                        referringPhysicianName: dataSet.string('x00080090'),
+                        patientBirthDate: dataSet.string('x00100030'),
+                        patientSex: dataSet.string('x00100040'),
+                        bodyPartExamined: dataSet.string('x00180015'),
+                    }
+
+                    const path = `${centerId}/${studyId}/${genFilename(re.file)}`
+                    await this.aws.uploadS3(file, path)
+
+                    return {
+                        type: re.file.mimetype,
+                        path, size: re.file.size,
+                        url: this.aws.getS3(path),
+                        metadata, transferSyntaxUid,
+                    }
+                })
+
+                dicoms = await Promise.all(results)
+            } catch (err) {
+                try {
+                    await this.aws.removeFiles(dicoms)
+                } catch (err) {
+                    this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
+                    return
                 }
             }
 
