@@ -842,13 +842,7 @@ export class CenterService {
                 email: true,
                 status: true,
                 fullname: true,
-                demographic: {
-                    select: {
-                        dob: true,
-                        phone: true,
-                        gender: true,
-                    }
-                },
+                demographic: true,
             },
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
@@ -912,13 +906,7 @@ export class CenterService {
                 email: true,
                 status: true,
                 fullname: true,
-                demographic: {
-                    select: {
-                        dob: true,
-                        phone: true,
-                        gender: true,
-                    }
-                }
+                demographic: true,
             },
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
@@ -1027,13 +1015,8 @@ export class CenterService {
                 patient: {
                     select: {
                         mrn: true,
-                        demographic: {
-                            select: {
-                                dob: true,
-                                gender: true,
-                            }
-                        },
                         fullname: true,
+                        demographic: true,
                     },
                 },
             },
@@ -1075,13 +1058,8 @@ export class CenterService {
                 patient: {
                     select: {
                         mrn: true,
-                        demographic: {
-                            select: {
-                                dob: true,
-                                gender: true,
-                            }
-                        },
                         fullname: true,
+                        demographic: true,
                     },
                 },
             },
@@ -1127,13 +1105,8 @@ export class CenterService {
                     patient: {
                         select: {
                             mrn: true,
-                            demographic: {
-                                select: {
-                                    dob: true,
-                                    gender: true,
-                                }
-                            },
                             fullname: true,
+                            demographic: true,
                         },
                     },
                 },
@@ -1233,13 +1206,8 @@ export class CenterService {
                     patient: {
                         select: {
                             mrn: true,
-                            demographic: {
-                                select: {
-                                    dob: true,
-                                    gender: true,
-                                }
-                            },
                             fullname: true,
+                            demographic: true,
                         },
                     },
                 },
