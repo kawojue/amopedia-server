@@ -28,7 +28,7 @@ export class MiscService {
             { studyId, mrn },
             {
                 secret: process.env.JWT_SECRET,
-                expiresIn: '30m'
+                expiresIn: '2h'
             }
         )
     }

@@ -1376,13 +1376,27 @@ export class CenterService {
         { token }: DicomTokenDTO,
     ) {
         try {
+            let tkData: GenerateDicomTokenDTO
+
+            try {
+                tkData = await this.jwtService.verifyAsync(
+                    token,
+                    {
+                        ignoreExpiration: false,
+                        secret: process.env.JWT_SECRET
+                    }
+                ) as GenerateDicomTokenDTO
+            } catch (err) {
+                return this.response.sendError(res, StatusCodes.Forbidden, "Token has expired")
+            }
+
             const {
                 sub,
                 mrn,
                 role,
                 studyId,
                 centerId
-            } = await this.jwtService.verifyAsync(token) as GenerateDicomTokenDTO
+            } = tkData
 
             const patient = await this.prisma.patient.findUnique({
                 where: {
