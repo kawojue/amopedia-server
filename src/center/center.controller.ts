@@ -245,6 +245,17 @@ export class CenterController {
     await this.centerService.uploadDicomFiles(res, toUpperCase(studyId), req.user, files || [])
   }
 
+  @Get('/dicoms/:studyId/:mrn')
+  @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
+  async fetchStudyDicoms(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Param('mrn') mrn: string,
+    @Param('studyId') studyId: string
+  ) {
+    await this.centerService.fetchStudyDicoms(res, req.user, mrn, toUpperCase(studyId))
+  }
+
   @Get('/bin')
   @Role(Roles.centerAdmin)
   async bin(@Req() req: IRequest, @Res() res: Response) {

@@ -1229,11 +1229,9 @@ export class CenterService {
                     return this.response.sendError(res, StatusCodes.Forbidden, "You do not have access to this patient's record")
                 }
 
-                res.on('finish', async () => {
-                    await this.prisma.patientStudy.update({
-                        where: { study_id: studyId },
-                        data: { status: 'Opened' }
-                    })
+                await this.prisma.patientStudy.update({
+                    where: { study_id: studyId },
+                    data: { status: 'Opened' }
                 })
             }
 
@@ -1365,6 +1363,56 @@ export class CenterService {
             }
 
             this.response.sendSuccess(res, StatusCodes.OK, { data })
+        } catch (err) {
+            this.misc.handleServerError(res, err)
+        }
+    }
+
+    async fetchStudyDicoms(
+        res: Response,
+        { sub, centerId, role }: ExpressUser,
+        mrn: string,
+        studyId: string
+    ) {
+        try {
+            const patient = await this.prisma.patient.findUnique({
+                where: { mrn, centerId }
+            })
+
+            const study = await this.prisma.patientStudy.findUnique({
+                where: {
+                    study_id: studyId,
+                    patientId: patient.id,
+                },
+                select: { dicoms: true }
+            })
+
+            if (!study) {
+                return this.response.sendError(res, StatusCodes.NotFound, "Patient Study not found")
+            }
+
+            if (role === "radiologist" || role === "doctor") {
+                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, patient.id)
+
+                if (isNotAccessible) {
+                    return this.response.sendError(res, StatusCodes.Forbidden, "You do not have access to this patient's record")
+                }
+
+
+                await this.prisma.patientStudy.update({
+                    where: { study_id: studyId },
+                    data: { status: 'Opened' }
+                })
+            }
+
+            const dicoms = study.dicoms as unknown as IFile[]
+            const formattedDicoms = dicoms.map(dicom => {
+                if (dicom?.url) {
+                    return { ...dicom, url: `wadouri:${dicom.url}` }
+                }
+            })
+
+            this.response.sendSuccess(res, StatusCodes.OK, { data: formattedDicoms })
         } catch (err) {
             this.misc.handleServerError(res, err)
         }
