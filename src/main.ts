@@ -12,10 +12,9 @@ async function bootstrap() {
     origin: [
       `http://localhost:5173`,
       `http://localhost:3000`,
-      `http://localhost:3001`,
       `http://localhost:${PORT}`,
-      'https://amorad.vercel.app',
-      'https://276c-102-88-36-169.ngrok-free.app',
+      `https://amorad.vercel.app`,
+      `https://amorad-dicom.vercel.app`,
     ],
     optionsSuccessStatus: 200,
     methods: 'GET,PATCH,POST,PUT,DELETE',

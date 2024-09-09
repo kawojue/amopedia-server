@@ -28,6 +28,7 @@ import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ChangePasswordDTO } from './dto/password.dto'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
+import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 
 @ApiTags("Auth")
 @Controller('auth')
@@ -87,5 +88,10 @@ export class AuthController {
   @Get('/download')
   async downloadFile(@Res() res: Response, @Query() q: DownloadFileDTO) {
     await this.authService.downloadFile(res, q.path)
+  }
+
+  @Post('generate-dicom-token')
+  async generateDicomToken(@Res() res: Response, @Body() body: GenerateDicomTokenDTO) {
+    await this.authService.generateDicomToken(res, body)
   }
 }

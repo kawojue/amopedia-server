@@ -17,6 +17,7 @@ import { ChangePasswordDTO } from './dto/password.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 
 @Injectable()
 export class AuthService {
@@ -380,5 +381,22 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.InternalServerError, 'Internal server error')
             }
         }
+    }
+
+    async generateDicomToken(res: Response, { studyId, mrn }: GenerateDicomTokenDTO) {
+        const study = await this.prisma.patientStudy.findUnique({
+            where: {
+                patient: { mrn },
+                study_id: studyId,
+            }
+        })
+
+        if (!study) {
+            return this.response.sendError(res, StatusCodes.NotFound, "Study not found")
+        }
+
+        const token = await this.misc.generateNewDicomToken({ mrn, studyId })
+
+        this.response.sendSuccess(res, StatusCodes.OK, { token })
     }
 }

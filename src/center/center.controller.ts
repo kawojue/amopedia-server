@@ -42,6 +42,7 @@ import { toUpperCase } from 'helpers/transformer'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
+import { DicomTokenDTO } from 'src/auth/dto/dicom.dto'
 
 @ApiBearerAuth()
 @ApiTags('Center')
@@ -250,10 +251,9 @@ export class CenterController {
   async fetchStudyDicoms(
     @Req() req: IRequest,
     @Res() res: Response,
-    @Param('mrn') mrn: string,
-    @Param('studyId') studyId: string
+    @Query() q: DicomTokenDTO,
   ) {
-    await this.centerService.fetchStudyDicoms(res, req.user, mrn, toUpperCase(studyId))
+    await this.centerService.fetchStudyDicoms(res, q, req.user)
   }
 
   @Get('/bin')

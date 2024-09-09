@@ -19,6 +19,7 @@ import {
     removeNullFields,
 } from 'helpers/transformer'
 import { Response } from 'express'
+import { JwtService } from '@nestjs/jwt'
 import { validateFile } from 'utils/file'
 import { Injectable } from '@nestjs/common'
 import * as dicomParser from 'dicom-parser'
@@ -28,6 +29,7 @@ import { StatusCodes } from 'enums/statusCodes'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
+import { DicomTokenDTO, GenerateDicomTokenDTO } from 'src/auth/dto/dicom.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { $Enums, Roles, StudyStatus } from '@prisma/client'
 import { genFilename, genPassword } from 'helpers/generator'
@@ -39,6 +41,7 @@ export class CenterService {
         private readonly aws: AwsService,
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
+        private readonly jwtService: JwtService,
         private readonly response: ResponseService,
         private readonly encryption: EncryptionService,
     ) { }
@@ -1370,11 +1373,12 @@ export class CenterService {
 
     async fetchStudyDicoms(
         res: Response,
+        { token }: DicomTokenDTO,
         { sub, centerId, role }: ExpressUser,
-        mrn: string,
-        studyId: string
     ) {
         try {
+            const { mrn, studyId } = await this.jwtService.verifyAsync(token) as GenerateDicomTokenDTO
+
             const patient = await this.prisma.patient.findUnique({
                 where: { mrn, centerId }
             })
