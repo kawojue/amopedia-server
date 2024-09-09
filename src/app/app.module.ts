@@ -25,6 +25,6 @@ import { EncryptionService } from 'lib/encryption.service'
     ResponseService,
     EncryptionService,
   ],
-  exports: [AppService, PrismaService]
+  exports: [AppService]
 })
 export class AppModule { }

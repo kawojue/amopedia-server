@@ -14,10 +14,10 @@ import { getIpAddress } from 'helpers/getIPAddress'
 import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
 import { ChangePasswordDTO } from './dto/password.dto'
+import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 
 @Injectable()
 export class AuthService {
