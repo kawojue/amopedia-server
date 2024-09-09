@@ -20,7 +20,7 @@ export class OrganizationSignupDTO extends PasswordDTO {
     })
     @IsString()
     @MaxLength(100)
-    @Transform(({ value }) => toLowerCase(value))
+    @Transform(({ value }) => titleText(value))
     fullname: string
 
     @ApiProperty({
@@ -90,6 +90,7 @@ export class PractitionerSignupDTO extends PasswordDTO {
     })
     @IsString()
     @MaxLength(100)
+    @Transform(({ value }) => titleText(value))
     fullname: string
 
     @ApiProperty({

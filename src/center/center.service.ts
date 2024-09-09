@@ -108,7 +108,6 @@ export class CenterService {
                     id: true,
                     role: true,
                     email: true,
-                    phone: true,
                     status: true,
                     fullname: true,
                     createdAt: true,
