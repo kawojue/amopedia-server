@@ -44,13 +44,13 @@ import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
 import { DicomTokenDTO } from 'src/auth/dto/dicom.dto'
 
-@ApiBearerAuth()
 @ApiTags('Center')
 @Controller('center')
-@UseGuards(JwtAuthRoleGuard)
 export class CenterController {
   constructor(private readonly centerService: CenterService) { }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/fetch/staffs')
   @Role(Roles.centerAdmin)
   async fetchMedicalStaff(
@@ -61,7 +61,9 @@ export class CenterController {
     await this.centerService.fetchStaffs(res, req.user, query)
   }
 
+  @ApiBearerAuth()
   @Role(Roles.centerAdmin)
+  @UseGuards(JwtAuthRoleGuard)
   @Patch('/manage/suspension/:staffId')
   async suspendMedicalStaff(
     @Req() req: IRequest,
@@ -72,6 +74,8 @@ export class CenterController {
     await this.centerService.suspendStaff(res, staffId, req.user, query)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.centerAdmin)
   @Post('/invite/medical-staff')
   async inviteMedicalStaff(
@@ -82,6 +86,8 @@ export class CenterController {
     await this.centerService.inviteMedicalStaff(res, req.user, body)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.centerAdmin)
   @Post('/invite/center-admin')
   async inviteCenterAdmin(
@@ -92,18 +98,24 @@ export class CenterController {
     await this.centerService.inviteCenterAdmin(res, req.user, body)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/analytics')
   @Role(Roles.centerAdmin)
   async analytics(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.analytics(res, req.user)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/analytics/report')
   @Role(Roles.centerAdmin, Roles.radiologist, Roles.doctor)
   async reportAnalytics(@Req() req: IRequest, @Res() res: Response) {
     await this.centerService.reportAnalytics(res, req.user)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/charts')
   @Role(Roles.centerAdmin)
   async charts(
@@ -114,6 +126,8 @@ export class CenterController {
     await this.centerService.charts(res, req.user, query)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Post('/patient')
   @Role(Roles.centerAdmin)
   async addPatient(
@@ -124,6 +138,8 @@ export class CenterController {
     await this.centerService.addPatient(res, req.user, body)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.centerAdmin)
   @Put('/patient/:mrn/edit')
   async editPatient(
@@ -135,6 +151,8 @@ export class CenterController {
     await this.centerService.editPatient(res, mrn, req.user, body)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/patient/:mrn/fetch')
   async getPatient(
     @Req() req: IRequest,
@@ -144,6 +162,8 @@ export class CenterController {
     await this.centerService.getPatient(res, mrn, req.user)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.centerAdmin)
   @Post('/patient/:mrn/study')
   @UseInterceptors(AnyFilesInterceptor())
@@ -160,7 +180,8 @@ export class CenterController {
     await this.centerService.createPatientStudy(res, mrn, body, req.user, files || [])
   }
 
-
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/patient/:mrn/study')
   @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async fetchPatientStudies(
@@ -171,6 +192,8 @@ export class CenterController {
     await this.centerService.fetchPatientStudies(mrn, res, req.user)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/patient/:mrn/study/:studyId')
   @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async getPatientStudy(
@@ -182,6 +205,8 @@ export class CenterController {
     await this.centerService.getPatientStudy(res, req.user, mrn, toUpperCase(studyId))
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @UseInterceptors(AnyFilesInterceptor())
   @Put('/patient/:mrn/study/:studyId/edit')
   @ApiOperation({
@@ -198,6 +223,8 @@ export class CenterController {
     await this.centerService.editPatientStudy(res, toUpperCase(studyId), body, req.user, files || [])
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.centerAdmin)
   @Patch('/patient/:mrn/study/:studyId/:practitionerId/designate')
   async designatePatientStudy(
@@ -211,6 +238,8 @@ export class CenterController {
     await this.centerService.designatePatientStudy(res, mrn, toUpperCase(studyId), practitionerId, req.user, query)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/patients')
   @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async fetchPatients(
@@ -221,6 +250,8 @@ export class CenterController {
     await this.centerService.fetchPatients(res, req.user, query)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/reports')
   @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
   async fetchAllPatientStudies(
@@ -231,6 +262,8 @@ export class CenterController {
     await this.centerService.fetchAllPatientStudies(res, req.user, query)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Role(Roles.centerAdmin)
   @Post('/dicoms/:studyId')
   @UseInterceptors(AnyFilesInterceptor())
@@ -246,16 +279,16 @@ export class CenterController {
     await this.centerService.uploadDicomFiles(res, toUpperCase(studyId), req.user, files || [])
   }
 
-  @Get('/dicoms/:studyId/:mrn')
-  @Role(Roles.centerAdmin, Roles.doctor, Roles.radiologist)
+  @Get('/dicoms')
   async fetchStudyDicoms(
-    @Req() req: IRequest,
     @Res() res: Response,
     @Query() q: DicomTokenDTO,
   ) {
-    await this.centerService.fetchStudyDicoms(res, q, req.user)
+    await this.centerService.fetchStudyDicoms(res, q)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/bin')
   @Role(Roles.centerAdmin)
   async bin(@Req() req: IRequest, @Res() res: Response) {

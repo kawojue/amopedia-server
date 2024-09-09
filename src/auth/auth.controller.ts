@@ -26,9 +26,9 @@ import { AuthService } from './auth.service'
 import { DownloadFileDTO } from './dto/file'
 import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ChangePasswordDTO } from './dto/password.dto'
+import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
-import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 
 @ApiTags("Auth")
 @Controller('auth')
@@ -90,8 +90,14 @@ export class AuthController {
     await this.authService.downloadFile(res, q.path)
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
   @Post('generate-dicom-token')
-  async generateDicomToken(@Res() res: Response, @Body() body: GenerateDicomTokenDTO) {
-    await this.authService.generateDicomToken(res, body)
+  async generateDicomToken(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: GenerateDicomTokenDTO
+  ) {
+    await this.authService.generateDicomToken(res, req.user, body)
   }
 }

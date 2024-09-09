@@ -383,9 +383,14 @@ export class AuthService {
         }
     }
 
-    async generateDicomToken(res: Response, { studyId, mrn }: GenerateDicomTokenDTO) {
+    async generateDicomToken(
+        res: Response,
+        { sub, centerId, role }: ExpressUser,
+        { studyId, mrn }: GenerateDicomTokenDTO
+    ) {
         const study = await this.prisma.patientStudy.findUnique({
             where: {
+                centerId,
                 patient: { mrn },
                 study_id: studyId,
             }
@@ -395,7 +400,7 @@ export class AuthService {
             return this.response.sendError(res, StatusCodes.NotFound, "Study not found")
         }
 
-        const token = await this.misc.generateNewDicomToken({ mrn, studyId })
+        const token = await this.misc.generateNewDicomToken({ mrn, studyId, centerId, sub, role })
 
         this.response.sendSuccess(res, StatusCodes.OK, { token })
     }

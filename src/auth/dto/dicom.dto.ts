@@ -1,3 +1,4 @@
+import { Roles } from "@prisma/client"
 import { ApiProperty } from "@nestjs/swagger"
 import { Transform } from "class-transformer"
 import { toUpperCase } from "helpers/transformer"
@@ -19,6 +20,10 @@ export class GenerateDicomTokenDTO {
     @IsNotEmpty()
     @Transform(({ value }) => toUpperCase(value))
     studyId: string
+
+    role?: Roles
+    sub?: string
+    centerId?: string
 }
 
 export class DicomTokenDTO {

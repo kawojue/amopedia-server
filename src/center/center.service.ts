@@ -29,11 +29,11 @@ import { StatusCodes } from 'enums/statusCodes'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
-import { DicomTokenDTO, GenerateDicomTokenDTO } from 'src/auth/dto/dicom.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { $Enums, Roles, StudyStatus } from '@prisma/client'
 import { genFilename, genPassword } from 'helpers/generator'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
+import { DicomTokenDTO, GenerateDicomTokenDTO } from 'src/auth/dto/dicom.dto'
 
 @Injectable()
 export class CenterService {
@@ -411,7 +411,7 @@ export class CenterService {
                     OR: [
                         { email: email },
                         { govtId: govtId },
-                        { demographic: { phone: phone } },
+                        { demographic: { phone } },
                     ],
                 },
             })
@@ -1374,13 +1374,20 @@ export class CenterService {
     async fetchStudyDicoms(
         res: Response,
         { token }: DicomTokenDTO,
-        { sub, centerId, role }: ExpressUser,
     ) {
         try {
-            const { mrn, studyId } = await this.jwtService.verifyAsync(token) as GenerateDicomTokenDTO
+            const {
+                sub,
+                mrn,
+                role,
+                studyId,
+                centerId
+            } = await this.jwtService.verifyAsync(token) as GenerateDicomTokenDTO
 
             const patient = await this.prisma.patient.findUnique({
-                where: { mrn, centerId }
+                where: {
+                    mrn, centerId
+                }
             })
 
             const study = await this.prisma.patientStudy.findUnique({
