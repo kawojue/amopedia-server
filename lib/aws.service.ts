@@ -1,10 +1,10 @@
+import { Prisma } from '@prisma/client'
 import {
     GetObjectAclCommandInput, GetObjectCommand,
     DeleteObjectCommand, DeleteObjectCommandInput,
     S3Client, PutObjectCommand, PutObjectCommandInput,
 } from '@aws-sdk/client-s3'
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
 
 @Injectable()
 export class AwsService {
@@ -112,13 +112,14 @@ export class AwsService {
 
     async removeFiles(files: Prisma.JsonArray) {
         if (files.length > 0) {
-            for (const file of files) {
+            const deletePromises = files.map(async (file) => {
                 // @ts-ignore
                 if (file?.path) {
                     // @ts-ignore
-                    await this.deleteS3(file.path)
+                    return this.deleteS3(file.path)
                 }
-            }
+            })
+            await Promise.all(deletePromises)
         }
     }
 }

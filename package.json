@@ -41,6 +41,7 @@
     "decrypt-core": "^1.2.2",
     "dicom-parser": "^1.8.21",
     "express": "^4.19.2",
+    "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.1.13",

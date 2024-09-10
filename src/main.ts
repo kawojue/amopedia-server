@@ -1,3 +1,4 @@
+import * as morgan from 'morgan'
 import * as express from 'express'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app/app.module'
@@ -20,6 +21,7 @@ async function bootstrap() {
     methods: 'GET,PATCH,POST,PUT,DELETE',
   })
   app.use(express.json({ limit: 100 << 20 }))
+  app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
 
   const swaggerOptions = new DocumentBuilder()
