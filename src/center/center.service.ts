@@ -17,11 +17,12 @@ import {
     toUpperCase,
     transformMRN,
     removeNullFields,
+    getFileExtension,
 } from 'helpers/transformer'
 import { Response } from 'express'
 import { JwtService } from '@nestjs/jwt'
 import { validateFile } from 'utils/file'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, HttpException, Injectable, NotFoundException, UnsupportedMediaTypeException } from '@nestjs/common'
 import * as dicomParser from 'dicom-parser'
 import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
@@ -1244,86 +1245,99 @@ export class CenterService {
     }
 
     async uploadDicomFiles(
-        res: Response,
         studyId: string,
         { centerId }: ExpressUser,
         files: Array<Express.Multer.File>
     ) {
-        try {
-            if (files.length === 0) {
-                return this.response.sendError(res, StatusCodes.BadRequest, "No Dicom files selected")
-            }
-
-            const study = await this.prisma.patientStudy.findUnique({
-                where: {
-                    centerId,
-                    study_id: studyId,
-                }
-            })
-
-            if (!study) {
-                return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
-            }
-
-            let dicoms = []
-            try {
-                const results = files.map(async file => {
-                    const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
-
-                    if (re?.status) {
-                        return this.response.sendError(res, re.status, re.message)
-                    }
-
-                    const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
-
-                    const transferSyntaxUid = preliminaryDataSet.string('x00020010')
-
-                    const dataSet = dicomParser.parseDicom(re.file.buffer, { TransferSyntaxUID: transferSyntaxUid })
-
-                    const metadata = {
-                        patientName: dataSet.string('x00100010'),
-                        patientID: dataSet.string('x00100020'),
-                        studyDate: dataSet.string('x00080020'),
-                        modality: dataSet.string('x00080060'),
-                        studyDescription: dataSet.string('x00081030'),
-                        seriesDescription: dataSet.string('x0008103e'),
-                        institutionName: dataSet.string('x00080080'),
-                        referringPhysicianName: dataSet.string('x00080090'),
-                        patientBirthDate: dataSet.string('x00100030'),
-                        patientSex: dataSet.string('x00100040'),
-                        bodyPartExamined: dataSet.string('x00180015'),
-                    }
-
-                    const path = `${centerId}/${studyId}/${genFilename(re.file)}`
-                    await this.aws.uploadS3(file, path)
-
-                    return {
-                        type: re.file.mimetype,
-                        path, size: re.file.size,
-                        url: this.aws.getS3(path),
-                        metadata, transferSyntaxUid,
-                    }
-                })
-
-                dicoms = await Promise.all(results)
-            } catch (err) {
-                try {
-                    await this.aws.removeFiles(dicoms)
-                } catch (err) {
-                    this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
-                    return
-                }
-            }
-
-            await this.prisma.patientStudy.update({
-                where: { study_id: studyId },
-                data: { dicoms }
-            })
-
-            this.response.sendSuccess(res, StatusCodes.OK, { data: dicoms })
-        } catch (err) {
-            this.misc.handleServerError(res, err, "Error upload DICOM Files")
+        if (files.length === 0) {
+            throw new BadRequestException("No Dicom files were selected")
         }
+
+        const study = await this.prisma.patientStudy.findUnique({
+            where: {
+                centerId,
+                study_id: studyId,
+            }
+        })
+
+        if (!study) {
+            throw new NotFoundException("Patient study not found")
+        }
+
+        let dicoms = []
+        try {
+            const results = files.map(async file => {
+                const extension = getFileExtension(file)
+
+                if (extension !== "dcm") {
+                    throw new UnsupportedMediaTypeException("File is not allowed")
+                }
+
+                const re = validateFile(
+                    file,
+                    10 << 20,
+                    'application/dicom',
+                    'application/octet-stream',
+                    'image/dcm'
+                )
+
+                const formattedFile = {
+                    ...file,
+                    ...(file.mimetype === 'application/octet-stream' && { mimetype: 'image/dcm' })
+                }
+
+                if (re?.status) {
+                    throw new HttpException(re.message, re.status)
+                }
+
+                const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
+
+                const transferSyntaxUid = preliminaryDataSet.string('x00020010')
+
+                const dataSet = dicomParser.parseDicom(re.file.buffer, { TransferSyntaxUID: transferSyntaxUid })
+
+                const metadata = {
+                    patientName: dataSet.string('x00100010'),
+                    patientID: dataSet.string('x00100020'),
+                    studyDate: dataSet.string('x00080020'),
+                    modality: dataSet.string('x00080060'),
+                    studyDescription: dataSet.string('x00081030'),
+                    seriesDescription: dataSet.string('x0008103e'),
+                    institutionName: dataSet.string('x00080080'),
+                    referringPhysicianName: dataSet.string('x00080090'),
+                    patientBirthDate: dataSet.string('x00100030'),
+                    patientSex: dataSet.string('x00100040'),
+                    bodyPartExamined: dataSet.string('x00180015'),
+                }
+
+                const path = `${centerId}/${studyId}/${genFilename(re.file)}`
+                await this.aws.uploadS3(formattedFile, path)
+
+                return {
+                    type: re.file.mimetype,
+                    path, size: re.file.size,
+                    url: this.aws.getS3(path),
+                    metadata, transferSyntaxUid,
+                }
+            })
+
+            dicoms = await Promise.all(results)
+        } catch (err) {
+            try {
+                await this.aws.removeFiles(dicoms)
+            } catch (err) {
+                throw err
+            }
+
+            throw err
+        }
+
+        await this.prisma.patientStudy.update({
+            where: { study_id: studyId },
+            data: { dicoms }
+        })
+
+        return dicoms
     }
 
     async bin(res: Response, { centerId }: ExpressUser) {
@@ -1370,75 +1384,67 @@ export class CenterService {
         }
     }
 
-    async fetchStudyDicoms(
-        res: Response,
-        { token }: DicomTokenDTO,
-    ) {
+    async fetchStudyDicoms({ token }: DicomTokenDTO) {
+        let tkData: GenerateDicomTokenDTO
+
         try {
-            let tkData: GenerateDicomTokenDTO
-
-            try {
-                tkData = await this.jwtService.verifyAsync(
-                    token,
-                    {
-                        ignoreExpiration: false,
-                        secret: process.env.JWT_SECRET
-                    }
-                ) as GenerateDicomTokenDTO
-            } catch (err) {
-                return this.response.sendError(res, StatusCodes.Forbidden, "Token has expired")
-            }
-
-            const {
-                sub,
-                mrn,
-                role,
-                studyId,
-                centerId
-            } = tkData
-
-            const patient = await this.prisma.patient.findUnique({
-                where: {
-                    mrn, centerId
+            tkData = await this.jwtService.verifyAsync(
+                token,
+                {
+                    ignoreExpiration: false,
+                    secret: process.env.JWT_SECRET
                 }
-            })
-
-            const study = await this.prisma.patientStudy.findUnique({
-                where: {
-                    study_id: studyId,
-                    patientId: patient.id,
-                },
-                select: { dicoms: true }
-            })
-
-            if (!study) {
-                return this.response.sendError(res, StatusCodes.NotFound, "Patient Study not found")
-            }
-
-            if (role === "radiologist" || role === "doctor") {
-                const isNotAccessible = this.isNotAccessibleForPractitioner(sub, patient.id)
-
-                if (isNotAccessible) {
-                    return this.response.sendError(res, StatusCodes.Forbidden, "You do not have access to this patient's record")
-                }
-
-
-                await this.prisma.patientStudy.update({
-                    where: { study_id: studyId },
-                    data: { status: 'Opened' }
-                })
-            }
-
-            const dicoms = study.dicoms as unknown as IFile[]
-            const formattedDicoms = dicoms.map(dicom => {
-                if (dicom?.url) {
-                    return { ...dicom, url: `wadouri:${dicom.url}` }
-                }
-            })
-
-            this.response.sendSuccess(res, StatusCodes.OK, { data: formattedDicoms })
+            ) as GenerateDicomTokenDTO
         } catch (err) {
-            this.misc.handleServerError(res, err)
+            throw new ForbiddenException("Token has expired")
         }
+
+        const {
+            sub,
+            mrn,
+            role,
+            studyId,
+            centerId
+        } = tkData
+
+        const patient = await this.prisma.patient.findUnique({
+            where: { mrn, centerId }
+        })
+
+        if (!patient) {
+            throw new NotFoundException("Patient not found")
+        }
+
+        const study = await this.prisma.patientStudy.findUnique({
+            where: {
+                study_id: studyId,
+                patientId: patient.id,
+            },
+            select: { dicoms: true }
+        })
+
+        if (!study) {
+            throw new NotFoundException("Patient Study not found")
+        }
+
+        if (role === "radiologist" || role === "doctor") {
+            const isNotAccessible = await this.isNotAccessibleForPractitioner(sub, patient.id)
+
+            if (isNotAccessible) {
+                throw new ForbiddenException("You do not have access to this patient's record")
+            }
+
+            await this.prisma.patientStudy.update({
+                where: { study_id: studyId },
+                data: { status: 'Opened' }
+            })
+        }
+
+        const dicoms = study.dicoms as unknown as IFile[]
+        const formattedDicoms = dicoms
+            .filter(dicom => dicom?.url)
+            .map(dicom => ({ ...dicom, url: `wadouri:${dicom.url}` }))
+
+        return formattedDicoms
     }
 }

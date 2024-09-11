@@ -1,9 +1,8 @@
 import { StatusCodes } from 'enums/statusCodes'
-import { getFileExtension } from 'helpers/transformer'
 
 export const validateFile = (
     file: Express.Multer.File,
-    maxSize: number, ...extensions: string[]
+    maxSize: number, ...mimeTypes: string[]
 ) => {
     if (maxSize < file.size) {
         return {
@@ -12,10 +11,10 @@ export const validateFile = (
         }
     }
 
-    if (!extensions.includes(getFileExtension(file))) {
+    if (!mimeTypes.includes(file.mimetype)) {
         return {
             status: StatusCodes.UnsupportedMediaType,
-            message: `Extension is not allowed - ${file.originalname}`,
+            message: `Unsupported file - ${file.originalname}`,
         }
     }
 

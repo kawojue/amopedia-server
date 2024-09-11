@@ -36,18 +36,23 @@ import {
 import { Response } from 'express'
 import { Roles } from '@prisma/client'
 import { Role } from 'src/jwt/role.decorator'
+import { StatusCodes } from 'enums/statusCodes'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { CenterService } from './center.service'
 import { toUpperCase } from 'helpers/transformer'
+import { DicomTokenDTO } from 'src/auth/dto/dicom.dto'
+import { ResponseService } from 'lib/response.service'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
-import { DicomTokenDTO } from 'src/auth/dto/dicom.dto'
 
 @ApiTags('Center')
 @Controller('center')
 export class CenterController {
-  constructor(private readonly centerService: CenterService) { }
+  constructor(
+    private readonly response: ResponseService,
+    private readonly centerService: CenterService,
+  ) { }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthRoleGuard)
@@ -276,15 +281,16 @@ export class CenterController {
     @Param('studyId') studyId: string,
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    await this.centerService.uploadDicomFiles(res, toUpperCase(studyId), req.user, files || [])
+    const data = await this.centerService.uploadDicomFiles(toUpperCase(studyId), req.user, files || [])
+
+    return this.response.sendSuccess(res, StatusCodes.OK, { data })
   }
 
   @Get('/dicoms')
-  async fetchStudyDicoms(
-    @Res() res: Response,
-    @Query() q: DicomTokenDTO,
-  ) {
-    await this.centerService.fetchStudyDicoms(res, q)
+  async fetchStudyDicoms(@Res() res: Response, @Query() q: DicomTokenDTO,) {
+    const data = await this.centerService.fetchStudyDicoms(q)
+
+    return this.response.sendSuccess(res, StatusCodes.OK, { data })
   }
 
   @ApiBearerAuth()

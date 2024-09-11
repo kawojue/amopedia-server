@@ -16,6 +16,7 @@ async function bootstrap() {
       `http://localhost:${PORT}`,
       `https://amorad.vercel.app`,
       `https://amorad-dicom.vercel.app`,
+      `https://r5hw1931-2004.euw.devtunnels.ms`,
     ],
     optionsSuccessStatus: 200,
     methods: 'GET,PATCH,POST,PUT,DELETE',
@@ -36,11 +37,7 @@ async function bootstrap() {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerOptions)
   SwaggerModule.setup('docs', app, swaggerDocument)
 
-  try {
-    await app.listen(PORT)
-    console.log(`http://localhost:${PORT}`)
-  } catch (err) {
-    console.error(err.message)
-  }
+  await app.listen(PORT)
+  console.log(`http://localhost:${PORT}`)
 }
-bootstrap()
+bootstrap().catch(err => console.error(err.message))
