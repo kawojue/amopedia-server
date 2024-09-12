@@ -20,9 +20,16 @@ import {
     getFileExtension,
 } from 'helpers/transformer'
 import { Response } from 'express'
+import {
+    Injectable,
+    HttpException,
+    NotFoundException,
+    ForbiddenException,
+    BadRequestException,
+    UnsupportedMediaTypeException,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { validateFile } from 'utils/file'
-import { BadRequestException, ForbiddenException, HttpException, Injectable, NotFoundException, UnsupportedMediaTypeException } from '@nestjs/common'
 import * as dicomParser from 'dicom-parser'
 import { AwsService } from 'lib/aws.service'
 import { MiscService } from 'lib/misc.service'
@@ -554,7 +561,15 @@ export class CenterService {
             if (files?.length) {
                 try {
                     const results = files.map(async (file) => {
-                        const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
+                        const re = validateFile(
+                            file,
+                            5 << 20,
+                            'image/jpeg',
+                            'image/png',
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        )
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
@@ -637,7 +652,15 @@ export class CenterService {
             if (files?.length) {
                 try {
                     const results = files.map(async (file) => {
-                        const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
+                        const re = validateFile(
+                            file,
+                            5 << 20,
+                            'image/jpeg',
+                            'image/png',
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        )
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)

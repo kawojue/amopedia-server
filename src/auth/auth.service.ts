@@ -328,7 +328,12 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.BadRequest, "No image was selected")
             }
 
-            const re = validateFile(file, 5 << 20, 'png', 'jpg', 'jpeg')
+            const re = validateFile(
+                file,
+                5 << 20,
+                'image/png',
+                'image/jpeg'
+            )
 
             if (re?.status) {
                 return this.response.sendError(res, re.status, re.message)

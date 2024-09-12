@@ -22,12 +22,14 @@ export const transformMRN = (patientCount: number) => {
 }
 
 export const getFileExtension = (file: Express.Multer.File | string): string | undefined => {
-    let mimetype: string | undefined
+    let mimetype: string
 
     if (typeof file === "object" && file.mimetype) {
         mimetype = file.mimetype
     } else if (typeof file === "string") {
         mimetype = file
+    } else {
+        throw new Error("Invalid input: file must be either an object with a mimetype or a string.")
     }
 
     let extension: string | undefined
@@ -70,7 +72,8 @@ export const getFileExtension = (file: Express.Multer.File | string): string | u
             extension = 'pdf'
             break
         case 'application/msword':
-            extension = 'doc'
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            extension = 'docx'
             break
         default:
             throw new Error(`Unsupported MIME type: ${mimetype}`)
