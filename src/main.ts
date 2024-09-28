@@ -13,6 +13,7 @@ async function bootstrap() {
       `http://localhost:3000`,
       `http://localhost:${PORT}`,
       'https://amorad.vercel.app',
+      'https://amopedia.org',
     ],
     optionsSuccessStatus: 200,
     methods: 'GET,PATCH,POST,PUT,DELETE',
