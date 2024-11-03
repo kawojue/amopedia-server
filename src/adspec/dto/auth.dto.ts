@@ -4,6 +4,10 @@ import { titleText } from 'helpers/transformer'
 import { EmailDTO, LoginDTO } from 'src/auth/dto/login.dto'
 import { IsEnum, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator'
 
+enum Role {
+    admin = "admin",
+    specialist = "specialist"
+}
 
 export class SignupDTO extends LoginDTO {
     @ApiProperty({
@@ -13,11 +17,6 @@ export class SignupDTO extends LoginDTO {
     @MaxLength(100)
     @Transform(({ value }) => titleText(value))
     fullname: string
-}
-
-enum Role {
-    admin = "admin",
-    specialist = "specialist"
 }
 
 export class InviteDTO extends EmailDTO {

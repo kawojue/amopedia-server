@@ -9,10 +9,10 @@ import { InviteDTO, SignupDTO } from './dto/auth.dto'
 import { ResponseService } from 'lib/response.service'
 import { FetchPractitionersDTO } from './dto/prac.dto'
 import { EncryptionService } from 'lib/encryption.service'
-import { FetchOrganizationsDTO, ToggleStatusDTO } from './dto/org.dto'
+import { FetchCentersDTO, ToggleStatusDTO } from './dto/center.dto'
 
 @Injectable()
-export class AdradospecService {
+export class AdspecService {
     constructor(
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
@@ -22,38 +22,48 @@ export class AdradospecService {
 
     private or(search: string) {
         const OR = [
-            { country: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } },
-            { state: { contains: search, mode: 'insensitive' } },
-            { city: { contains: search, mode: 'insensitive' } },
-        ] as ({
-            country: {
-                contains: string
-                mode: "insensitive"
+            {
+                demographic: {
+                    OR: [
+                        { country: { contains: search, mode: 'insensitive' } },
+                        { state: { contains: search, mode: 'insensitive' } },
+                        { city: { contains: search, mode: 'insensitive' } },
+                    ]
+                }
             }
-        } | {
+        ] as ({
             email: {
                 contains: string
                 mode: "insensitive"
             }
         } | {
-            state: {
-                contains: string
-                mode: "insensitive"
-            }
-        } | {
-            city: {
-                contains: string
-                mode: "insensitive"
+            demographic: {
+                OR: ({
+                    country: {
+                        contains: string
+                        mode: "insensitive"
+                    }
+                } | {
+                    state: {
+                        contains: string
+                        mode: "insensitive"
+                    }
+                } | {
+                    city: {
+                        contains: string
+                        mode: "insensitive"
+                    }
+                })[]
             }
         })[]
 
         return OR
     }
 
-    async signup(res: Response, { email, password, fullname }: SignupDTO) {
+    async signup(res: Response, { email, password, fullname, }: SignupDTO) {
         try {
-            const admin = await this.prisma.adradospec.findUnique({
+            const admin = await this.prisma.adspec.findUnique({
                 where: { email }
             })
 
@@ -63,8 +73,14 @@ export class AdradospecService {
 
             password = await this.encryption.hashAsync(password, 12)
 
-            await this.prisma.adradospec.create({
-                data: { email, password, fullname, role: 'admin', superAdmin: true }
+            await this.prisma.adspec.create({
+                data: {
+                    email,
+                    password,
+                    fullname,
+                    role: 'admin',
+                    superAdmin: true,
+                }
             })
 
             this.response.sendSuccess(res, StatusCodes.Created, {
@@ -77,36 +93,36 @@ export class AdradospecService {
 
     async login(res: Response, { email, password }: LoginDTO) {
         try {
-            const adradospec = await this.prisma.adradospec.findUnique({
+            const adspec = await this.prisma.adspec.findUnique({
                 where: { email }
             })
 
-            if (!adradospec) {
+            if (!adspec) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Invalid email or password')
             }
 
-            if (adradospec.status === "SUSPENDED") {
+            if (adspec.status === "SUSPENDED") {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Your account has been suspended")
             }
 
-            const isMatch = await this.encryption.compareAsync(password, adradospec.password)
+            const isMatch = await this.encryption.compareAsync(password, adspec.password)
             if (!isMatch) {
                 return this.response.sendError(res, StatusCodes.Unauthorized, 'Incorrect password')
             }
 
             const access_token = await this.misc.generateNewAccessToken({
-                sub: adradospec.id,
-                role: adradospec.role,
-                modelName: 'adradospec',
-                status: adradospec.status,
+                sub: adspec.id,
+                role: adspec.role,
+                modelName: 'adspec',
+                status: adspec.status,
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
                 data: {
-                    role: adradospec.role,
-                    email: adradospec.email,
-                    avatar: adradospec.avatar,
-                    fullname: adradospec.fullname,
+                    role: adspec.role,
+                    email: adspec.email,
+                    avatar: adspec.avatar,
+                    fullname: adspec.fullname,
                 },
                 access_token
             })
@@ -115,17 +131,17 @@ export class AdradospecService {
         }
     }
 
-    async inviteNewAdrasdospec(
+    async inviteNewAdspec(
         res: Response,
         { sub }: ExpressUser,
         { email, fullname, role, password }: InviteDTO,
     ) {
         try {
-            const adradospec = await this.prisma.adradospec.findUnique({
+            const adspec = await this.prisma.adspec.findUnique({
                 where: { id: sub }
             })
 
-            const isExist = await this.prisma.adradospec.findUnique({
+            const isExist = await this.prisma.adspec.findUnique({
                 where: { email }
             })
 
@@ -133,13 +149,13 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Member with the same email already exists")
             }
 
-            if (!adradospec.superAdmin && role === "admin") {
+            if (!adspec.superAdmin && role === "admin") {
                 return this.response.sendError(res, StatusCodes.Forbidden, "Only the Super Admin can invite an Admin")
             }
 
             const pswd = await this.encryption.hashAsync(password, 12)
 
-            await this.prisma.adradospec.create({
+            await this.prisma.adspec.create({
                 data: {
                     email, fullname,
                     superAdmin: false,
@@ -156,8 +172,8 @@ export class AdradospecService {
         }
     }
 
-    async fetchAdradospec(res: Response) {
-        const adradospecs = await this.prisma.adradospec.findMany({
+    async fetchAdspec(res: Response) {
+        const adspecs = await this.prisma.adspec.findMany({
             select: {
                 id: true,
                 email: true,
@@ -168,16 +184,16 @@ export class AdradospecService {
             orderBy: { updatedAt: 'desc' }
         })
 
-        this.response.sendSuccess(res, StatusCodes.OK, { data: adradospecs })
+        this.response.sendSuccess(res, StatusCodes.OK, { data: adspecs })
     }
 
-    async fetchOrganizations(
+    async fetchCenters(
         res: Response,
         {
             limit = 100, page = 1,
             status, sortBy, search = "",
             endDate = '', startDate = '',
-        }: FetchOrganizationsDTO
+        }: FetchCentersDTO
     ) {
         try {
             page = Number(page)
@@ -206,6 +222,7 @@ export class AdradospecService {
                 where: commonWhere,
                 take: limit,
                 skip: offset,
+                inclde: { demographic: true },
                 orderBy: sortBy === "name" ? { centerName: 'asc' } : { createdAt: 'desc' }
             })
 
@@ -233,7 +250,7 @@ export class AdradospecService {
         }
     }
 
-    async fetchOrganization(res: Response, centerId: string) {
+    async fetchCenter(res: Response, centerId: string) {
         try {
             const center = await this.prisma.center.findUnique({
                 where: { id: centerId },
@@ -241,10 +258,10 @@ export class AdradospecService {
                     admins: {
                         where: { superAdmin: true },
                         select: {
-                            phone: true,
                             email: true,
                             avatar: true,
                             fullname: true,
+                            demographic: true,
                         }
                     }
                 }
@@ -274,7 +291,7 @@ export class AdradospecService {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Facility not found')
             }
 
-            await this.prisma.$transaction([
+            await Promise.all([
                 this.prisma.center.update({
                     where: { id: centerId },
                     data: { status }
@@ -324,11 +341,12 @@ export class AdradospecService {
                     type: 'system',
                     OR: [
                         { fullname: { contains: search, mode: 'insensitive' } },
-                        ...this.or(search),
+                        ...this.or(search)
                     ]
                 },
                 take: limit,
                 skip: offset,
+                include: { demographic: true },
                 orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
             })
 
@@ -355,15 +373,14 @@ export class AdradospecService {
         try {
             const practitioner = await this.prisma.practitioner.findUnique({
                 where: { id: practitionerId, type: 'system' },
+                include: { demographic: true },
             })
 
             if (!practitioner) {
                 return this.response.sendError(res, StatusCodes.NotFound, 'Practitioner not found')
             }
 
-            this.response.sendSuccess(res, StatusCodes.OK, {
-                data: practitioner
-            })
+            this.response.sendSuccess(res, StatusCodes.OK, { data: practitioner })
         } catch (err) {
             this.misc.handleServerError(res, err, "Error getting practitioner")
         }
@@ -403,7 +420,7 @@ export class AdradospecService {
             const [
                 patientCounts, facilityCounts,
                 caseStudyCounts, caseStudies,
-            ] = await this.prisma.$transaction([
+            ] = await Promise.all([
                 this.prisma.patient.count(),
                 this.prisma.center.count(),
                 this.prisma.patientStudy.count(),
@@ -413,8 +430,9 @@ export class AdradospecService {
             ])
 
             let totalDicomCounts = 0
-            await Promise.all(caseStudies.map(async patient => {
-                const dicomCounts = await Promise.all(patient.dicoms.map(async dicom => {
+            await Promise.all(caseStudies.map(async (patient) => {
+                const dicomCounts = await Promise.all(patient.dicoms.map(async (dicom) => {
+                    // @ts-ignore
                     if (dicom?.path) {
                         return 1
                     } else {
@@ -444,7 +462,10 @@ export class AdradospecService {
                 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
             ]
 
-            const chart: { label: string; count: string }[] = []
+            const chart: {
+                label: string
+                count: string
+            }[] = []
 
             if (q === "weekdays") {
                 labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']

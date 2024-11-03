@@ -1,22 +1,26 @@
 import { Module } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
 import { MiscService } from 'lib/misc.service'
-import { JwtModule } from 'src/jwt/jwt.module'
+import { AdspecService } from './adspec.service'
 import { PassportModule } from '@nestjs/passport'
 import { PrismaService } from 'lib/prisma.service'
+import { JwtStrategy } from 'src/jwt/jwt.strategy'
+import { AdspecController } from './adspec.controller'
 import { ResponseService } from 'lib/response.service'
-import { AdradospecService } from './adradospec.service'
 import { EncryptionService } from 'lib/encryption.service'
-import { AdradospecController } from './adradospec.controller'
 
 @Module({
-  imports: [JwtModule, PassportModule.register({ defaultStrategy: 'jwt' })],
-  controllers: [AdradospecController],
+  imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
+  controllers: [AdspecController],
   providers: [
-    AdradospecService,
+    JwtService,
+    AdspecService,
     MiscService,
     PrismaService,
+    JwtStrategy,
     ResponseService,
     EncryptionService,
   ],
+  exports: [AdspecService]
 })
-export class AdradospecModule { }
+export class AdspecModule { }

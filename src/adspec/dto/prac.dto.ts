@@ -1,13 +1,13 @@
 import { IsEnum } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
-import { FetchOrganizationsDTO } from './org.dto'
+import { FetchCentersDTO } from './center.dto'
 
 enum Role {
     doctor = "doctor",
     radiologist = "radiologist",
 }
 
-export class FetchPractitionersDTO extends FetchOrganizationsDTO {
+export class FetchPractitionersDTO extends FetchCentersDTO {
     @ApiProperty({
         enum: Role
     })

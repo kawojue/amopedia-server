@@ -1,17 +1,34 @@
+import {
+  Req,
+  Res,
+  Get,
+  Put,
+  Post,
+  Body,
+  Query,
+  Patch,
+  UseGuards,
+  Controller,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+} from '@nestjs/swagger'
+import {
+  OrganizationSignupDTO,
+  PractitionerSignupDTO,
+} from './dto/signup.dto'
 import { Request, Response } from 'express'
-import { AuthGuard } from '@nestjs/passport'
 import { AuthService } from './auth.service'
 import { DownloadFileDTO } from './dto/file'
-import { RolesGuard } from 'src/jwt/jwt-auth.guard'
-import {
-  Body, UploadedFile, Post, Put, Req, Patch, Query,
-  Controller, UseGuards, Res, UseInterceptors, Get,
-} from '@nestjs/common'
 import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ChangePasswordDTO } from './dto/password.dto'
+import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
-import { OrganizationSignupDTO, PractitionerSignupDTO } from './dto/signup.dto'
+import { JwtAuthRoleGuard } from 'src/jwt/jwt-auth-role.guard'
 
 @ApiTags("Auth")
 @Controller('auth')
@@ -43,8 +60,8 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Patch('/change-password')
+  @UseGuards(JwtAuthRoleGuard)
   async changePassword(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -54,10 +71,10 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'The formdata key should be profile_photo' })
   @Put('upload/profile-photo')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(JwtAuthRoleGuard)
   @UseInterceptors(FileInterceptor('profile_photo'))
+  @ApiOperation({ summary: 'The formdata key should be profile_photo' })
   async updateAvatar(
     @Req() req: IRequest,
     @Res() res: Response,
@@ -67,9 +84,20 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(JwtAuthRoleGuard)
   @Get('/download')
   async downloadFile(@Res() res: Response, @Query() q: DownloadFileDTO) {
     await this.authService.downloadFile(res, q.path)
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthRoleGuard)
+  @Post('generate-dicom-token')
+  async generateDicomToken(
+    @Req() req: IRequest,
+    @Res() res: Response,
+    @Body() body: GenerateDicomTokenDTO
+  ) {
+    await this.authService.generateDicomToken(res, req.user, body)
   }
 }

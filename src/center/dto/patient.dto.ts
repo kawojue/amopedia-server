@@ -1,9 +1,13 @@
 import {
-    IsEmail, IsOptional, IsString,
-    IsPhoneNumber, IsEnum, MaxLength,
+    IsEnum,
+    IsEmail,
+    IsString,
+    MaxLength,
+    IsOptional,
 } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
+import { PartialType } from '@nestjs/mapped-types'
 import { Gender, MaritalStatus } from '@prisma/client'
 import { titleText, toLowerCase } from 'helpers/transformer'
 
@@ -27,7 +31,6 @@ export class AddPatientDTO {
         example: '+2348131911964'
     })
     @MaxLength(14)
-    @IsPhoneNumber()
     phone: string
 
     @ApiProperty({
@@ -51,8 +54,8 @@ export class AddPatientDTO {
         example: 12345678907
     })
     @IsOptional()
-    @MaxLength(11)
-    nin: string
+    @MaxLength(50)
+    govtId: string
 
     @ApiProperty({
         example: '106101'
@@ -66,4 +69,33 @@ export class AddPatientDTO {
     })
     @IsEnum(MaritalStatus)
     marital_status: MaritalStatus
+
+    @ApiProperty({
+        example: 'My city'
+    })
+    @IsString()
+    @MaxLength(50)
+    @IsOptional()
+    @Transform(({ value }) => titleText(value))
+    city: string
+
+    @ApiProperty({
+        example: 'My state'
+    })
+    @IsString()
+    @MaxLength(50)
+    @IsOptional()
+    @Transform(({ value }) => titleText(value))
+    state: string
+
+    @ApiProperty({
+        example: 'Nigeria'
+    })
+    @IsString()
+    @IsOptional()
+    @MaxLength(50)
+    @Transform(({ value }) => titleText(value))
+    country: string
 }
+
+export class EditPatientDTO extends PartialType(AddPatientDTO) { }

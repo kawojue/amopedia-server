@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt'
 import { Injectable } from '@nestjs/common'
 import { StatusCodes } from 'enums/statusCodes'
 import { ResponseService } from './response.service'
+import { GenerateDicomTokenDTO } from 'src/auth/dto/dicom.dto'
 
 @Injectable()
 export class MiscService {
@@ -13,7 +14,23 @@ export class MiscService {
     }
 
     async generateNewAccessToken({ sub, role, status, modelName, centerId }: JwtPayload) {
-        return await this.jwtService.signAsync({ sub, role, status, modelName, centerId })
+        return await this.jwtService.signAsync(
+            { sub, role, status, modelName, centerId },
+            {
+                secret: process.env.JWT_SECRET,
+                expiresIn: '30d'
+            }
+        )
+    }
+
+    async generateNewDicomToken({ studyId, mrn }: GenerateDicomTokenDTO) {
+        return await this.jwtService.signAsync(
+            { studyId, mrn },
+            {
+                secret: process.env.JWT_SECRET,
+                expiresIn: '2h'
+            }
+        )
     }
 
     handleServerError(res: Response, err?: any, msg?: string) {

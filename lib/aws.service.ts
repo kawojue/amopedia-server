@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import {
     GetObjectAclCommandInput, GetObjectCommand,
     DeleteObjectCommand, DeleteObjectCommandInput,
@@ -109,13 +110,16 @@ export class AwsService {
         }
     }
 
-    async removeFiles(files: IFile[]) {
+    async removeFiles(files: Prisma.JsonArray) {
         if (files.length > 0) {
-            for (const file of files) {
+            const deletePromises = files.map(async (file) => {
+                // @ts-ignore
                 if (file?.path) {
-                    await this.deleteS3(file.path)
+                    // @ts-ignore
+                    return this.deleteS3(file.path)
                 }
-            }
+            })
+            await Promise.all(deletePromises)
         }
     }
 }

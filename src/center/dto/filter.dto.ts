@@ -9,7 +9,8 @@ enum Sort {
 
 export class SortByDTO {
     @ApiProperty({
-        enum: Sort
+        enum: Sort,
+        required: false,
     })
     @IsEnum(Sort)
     @IsOptional()
@@ -18,7 +19,8 @@ export class SortByDTO {
 
 export class SearchDTO extends SortByDTO {
     @ApiProperty({
-        example: ' '
+        example: ' ',
+        required: false,
     })
     @IsString()
     @IsOptional()
@@ -28,13 +30,15 @@ export class SearchDTO extends SortByDTO {
 
 export class InfiniteScrollDTO {
     @ApiProperty({
-        example: 1
+        example: 1,
+        required: false,
     })
     @IsOptional()
     page: number
 
     @ApiProperty({
-        example: 100
+        example: 100,
+        required: false,
     })
     @IsOptional()
     limit: number
@@ -42,13 +46,15 @@ export class InfiniteScrollDTO {
 
 export class InfiniteScrollWithSearchDTO extends SearchDTO {
     @ApiProperty({
-        example: 1
+        example: 1,
+        required: false,
     })
     @IsOptional()
     page: number
 
     @ApiProperty({
-        example: 50
+        example: 50,
+        required: false,
     })
     @IsOptional()
     limit: number

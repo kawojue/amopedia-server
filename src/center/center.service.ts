@@ -1,27 +1,47 @@
+import {
+    PatientStudyDTO,
+    DesignateStudyDTO,
+    EditPatientStudyDTO,
+} from './dto/study.dto'
+import {
+    ChartDTO,
+    FetchStaffDTO,
+    FetchPatientDTO,
+    FetchPatientStudyDTO,
+} from './dto/fetch.dto'
+import {
+    InviteCenterAdminDTO,
+    InviteMedicalStaffDTO
+} from './dto/invite.dto'
+import {
+    toUpperCase,
+    transformMRN,
+    removeNullFields,
+    getFileExtension,
+} from 'helpers/transformer'
 import { Response } from 'express'
+import {
+    Injectable,
+    HttpException,
+    NotFoundException,
+    ForbiddenException,
+    BadRequestException,
+    UnsupportedMediaTypeException,
+} from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
 import { validateFile } from 'utils/file'
-import { Injectable } from '@nestjs/common'
 import * as dicomParser from 'dicom-parser'
 import { AwsService } from 'lib/aws.service'
-import { AddPatientDTO } from './dto/patient'
 import { MiscService } from 'lib/misc.service'
 import { StatusCodes } from 'enums/statusCodes'
-import {
-    InviteCenterAdminDTO, InviteMedicalStaffDTO
-} from './dto/invite.dto'
 import { SuspendStaffDTO } from './dto/auth.dto'
 import { PrismaService } from 'lib/prisma.service'
 import { ResponseService } from 'lib/response.service'
 import { EncryptionService } from 'lib/encryption.service'
 import { $Enums, Roles, StudyStatus } from '@prisma/client'
 import { genFilename, genPassword } from 'helpers/generator'
-import {
-    DesignateStudyDTO, EditPatientStudyDTO, PatientStudyDTO
-} from './dto/study.dto'
-import { toUpperCase, transformMRN } from 'helpers/transformer'
-import {
-    ChartDTO, FetchPatientDTO, FetchPatientStudyDTO, FetchStaffDTO
-} from './dto/fetch.dto'
+import { AddPatientDTO, EditPatientDTO } from './dto/patient.dto'
+import { DicomTokenDTO, GenerateDicomTokenDTO } from 'src/auth/dto/dicom.dto'
 
 @Injectable()
 export class CenterService {
@@ -29,6 +49,7 @@ export class CenterService {
         private readonly aws: AwsService,
         private readonly misc: MiscService,
         private readonly prisma: PrismaService,
+        private readonly jwtService: JwtService,
         private readonly response: ResponseService,
         private readonly encryption: EncryptionService,
     ) { }
@@ -82,8 +103,8 @@ export class CenterService {
                 centerId,
                 OR: [
                     { email: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
                     { fullname: { contains: search, mode: 'insensitive' } },
+                    { demographic: { phone: { contains: search, mode: 'insensitive' } } },
                 ]
             }
 
@@ -95,10 +116,10 @@ export class CenterService {
                     id: true,
                     role: true,
                     email: true,
-                    phone: true,
                     status: true,
                     fullname: true,
                     createdAt: true,
+                    demographic: true,
                 },
                 orderBy: sortBy === "name" ? { fullname: 'asc' } : { createdAt: 'desc' }
             })
@@ -207,10 +228,15 @@ export class CenterService {
 
             await this.prisma.practitioner.create({
                 data: {
-                    type: 'center', state, address,
+                    demographic: {
+                        create: {
+                            state, address, city,
+                            country, phone, zip_code,
+                        }
+                    },
+                    email, fullname, password: pswd,
+                    type: 'center', status: 'ACTIVE',
                     center: { connect: { id: centerId } },
-                    city, country, email, fullname, phone,
-                    zip_code, status: 'ACTIVE', password: pswd,
                     role: profession as Roles, practiceNumber,
                 }
             })
@@ -250,8 +276,9 @@ export class CenterService {
 
             await this.prisma.centerAdmin.create({
                 data: {
-                    email, fullname, phone, password: pswd,
-                    center: { connect: { id: centerId } }
+                    email, fullname, password: pswd,
+                    demographic: { create: { phone } },
+                    center: { connect: { id: centerId } },
                 }
             })
 
@@ -269,7 +296,7 @@ export class CenterService {
             const [
                 patientCounts, patients,
                 pracCounts, adminCounts
-            ] = await this.prisma.$transaction([
+            ] = await Promise.all([
                 this.prisma.patient.count({ where: { centerId } }),
                 this.prisma.patient.findMany({
                     where: { centerId },
@@ -290,6 +317,7 @@ export class CenterService {
                 const caseStudies = patient.caseStudies
                 await Promise.all(caseStudies.map(async caseStudy => {
                     const dicomCounts = await Promise.all(caseStudy.dicoms.map(async dicom => {
+                        // @ts-ignore
                         if (dicom?.path) {
                             return 1
                         } else {
@@ -377,7 +405,8 @@ export class CenterService {
         res: Response,
         { centerId }: ExpressUser,
         {
-            address, gender, nin,
+            state, city, country,
+            address, gender, govtId,
             marital_status, fullname,
             zip_code, dob, phone, email,
         }: AddPatientDTO,
@@ -388,8 +417,8 @@ export class CenterService {
                     centerId: centerId,
                     OR: [
                         { email: email },
-                        { phone: phone },
-                        { nin: nin },
+                        { govtId: govtId },
+                        { demographic: { phone } },
                     ],
                 },
             })
@@ -407,15 +436,22 @@ export class CenterService {
 
             const newPatient = await this.prisma.patient.create({
                 data: {
-                    address, gender, nin, mrn,
+                    demographic: {
+                        create: {
+                            address, zip_code,
+                            gender, dob, phone,
+                            state, city, country,
+                        }
+                    },
+                    govtId, mrn, fullname, email,
                     maritalStatus: marital_status,
-                    fullname, zip_code, dob, phone, email,
                     center: { connect: { id: centerId } },
-                }
+                },
+                include: { demographic: true }
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: newPatient,
+                data: removeNullFields(newPatient),
                 message: "New patient has been added to the record"
             })
         } catch (err) {
@@ -428,10 +464,11 @@ export class CenterService {
         mrn: string,
         { centerId }: ExpressUser,
         {
-            address, gender, nin,
+            state, city, country,
+            address, gender, govtId,
             marital_status, fullname,
             zip_code, dob, phone, email,
-        }: AddPatientDTO,
+        }: EditPatientDTO,
     ) {
         try {
             const patient = await this.prisma.patient.findUnique({
@@ -449,14 +486,21 @@ export class CenterService {
             const updatedPatient = await this.prisma.patient.update({
                 where: { mrn, centerId },
                 data: {
-                    zip_code, dob, phone, email,
+                    demographic: {
+                        update: {
+                            address, zip_code,
+                            gender, dob, phone,
+                            state, city, country,
+                        }
+                    },
+                    email, govtId, fullname,
                     maritalStatus: marital_status,
-                    address, gender, nin, fullname,
-                }
+                },
+                include: { demographic: true }
             })
 
             this.response.sendSuccess(res, StatusCodes.OK, {
-                data: updatedPatient,
+                data: removeNullFields(updatedPatient),
                 message: "Patient has been updated"
             })
         } catch (err) {
@@ -471,7 +515,8 @@ export class CenterService {
     ) {
         try {
             const patient = await this.prisma.patient.findUnique({
-                where: { mrn, centerId }
+                where: { mrn, centerId },
+                include: { demographic: true }
             })
 
             if (!patient) {
@@ -512,11 +557,19 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Patient does not exist")
             }
 
-            let paperwork = [] as IFile[]
+            let paperwork = []
             if (files?.length) {
                 try {
-                    const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
+                    const results = files.map(async (file) => {
+                        const re = validateFile(
+                            file,
+                            5 << 20,
+                            'image/jpeg',
+                            'image/png',
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        )
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
@@ -530,9 +583,9 @@ export class CenterService {
                             path, size: re.file.size,
                             url: this.aws.getS3(path)
                         }
-                    }))
+                    })
 
-                    paperwork = results.filter((result): result is IFile => !!result)
+                    paperwork = await Promise.all(results)
                 } catch (err) {
                     try {
                         await this.aws.removeFiles(paperwork)
@@ -595,11 +648,19 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.Unauthorized, "Seek the permission to edit")
             }
 
-            let paperwork: IFile[] = []
+            let paperwork = []
             if (files?.length) {
                 try {
-                    const results = await Promise.all(files.map(async file => {
-                        const re = validateFile(file, 5 << 20, 'pdf', 'docx', 'png', 'jpg', 'jpeg')
+                    const results = files.map(async (file) => {
+                        const re = validateFile(
+                            file,
+                            5 << 20,
+                            'image/jpeg',
+                            'image/png',
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        )
 
                         if (re?.status) {
                             return this.response.sendError(res, re.status, re.message)
@@ -613,9 +674,9 @@ export class CenterService {
                             path, size: re.file.size,
                             url: this.aws.getS3(path)
                         }
-                    }))
+                    })
 
-                    paperwork = results.filter((result): result is IFile => !!result)
+                    paperwork = await Promise.all(results)
                 } catch (err) {
                     try {
                         await this.aws.removeFiles(paperwork)
@@ -624,8 +685,8 @@ export class CenterService {
                     }
                 }
 
-                const paperworks = study.paperwork
-                let movedPaperwork = [] as IFile[]
+                const paperworks = study.paperwork as any
+                let movedPaperwork = []
                 if (paperworks.length > 0) {
                     for (const paperwork of paperworks) {
                         if (paperwork?.path) {
@@ -658,10 +719,9 @@ export class CenterService {
             const data = await this.prisma.patientStudy.update({
                 where: { study_id: study.study_id },
                 data: {
-                    paperwork,
-                    access_code, body_part, cpt_code,
                     clinical_info, description, procedure,
                     priority, reporting_status, site, modality,
+                    paperwork, access_code, body_part, cpt_code,
                 }
             })
 
@@ -768,9 +828,15 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 createdAt: dateFilter
             }
@@ -783,9 +849,15 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 createdAt: dateFilter
             },
@@ -794,12 +866,12 @@ export class CenterService {
             select: {
                 id: true,
                 mrn: true,
-                dob: true,
                 email: true,
-                phone: true,
-                gender: true,
                 status: true,
                 fullname: true,
+                createdAt: true,
+                updatedAt: true,
+                demographic: true,
             },
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
@@ -822,9 +894,15 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 updatedAt: dateFilter,
             }
@@ -837,9 +915,15 @@ export class CenterService {
                 OR: [
                     { fullname: { contains: search, mode: 'insensitive' } },
                     { mrn: { contains: search, mode: 'insensitive' } },
-                    { nin: { contains: search, mode: 'insensitive' } },
-                    { address: { contains: search, mode: 'insensitive' } },
-                    { phone: { contains: search, mode: 'insensitive' } },
+                    { govtId: { contains: search, mode: 'insensitive' } },
+                    {
+                        demographic: {
+                            OR: [
+                                { phone: { contains: search, mode: 'insensitive' } },
+                                { address: { contains: search, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 ],
                 updatedAt: dateFilter,
             },
@@ -848,12 +932,12 @@ export class CenterService {
             select: {
                 id: true,
                 mrn: true,
-                dob: true,
                 email: true,
-                phone: true,
-                gender: true,
                 status: true,
                 fullname: true,
+                createdAt: true,
+                updatedAt: true,
+                demographic: true,
             },
             orderBy: sortBy === "name" ? { fullname: 'asc' } : { updatedAt: 'desc' },
         })
@@ -962,9 +1046,8 @@ export class CenterService {
                 patient: {
                     select: {
                         mrn: true,
-                        dob: true,
-                        gender: true,
                         fullname: true,
+                        demographic: true,
                     },
                 },
             },
@@ -1006,9 +1089,8 @@ export class CenterService {
                 patient: {
                     select: {
                         mrn: true,
-                        dob: true,
-                        gender: true,
                         fullname: true,
+                        demographic: true,
                     },
                 },
             },
@@ -1054,9 +1136,8 @@ export class CenterService {
                     patient: {
                         select: {
                             mrn: true,
-                            dob: true,
-                            gender: true,
                             fullname: true,
+                            demographic: true,
                         },
                     },
                 },
@@ -1110,7 +1191,7 @@ export class CenterService {
                 return this.response.sendError(res, StatusCodes.NotFound, "Practitioner does not exist")
             }
 
-            await this.prisma.$transaction([
+            await Promise.all([
                 this.prisma.practitioner.update({
                     where: { id: practitionerId },
                     data: {
@@ -1156,9 +1237,8 @@ export class CenterService {
                     patient: {
                         select: {
                             mrn: true,
-                            dob: true,
-                            gender: true,
                             fullname: true,
+                            demographic: true,
                         },
                     },
                 },
@@ -1175,11 +1255,9 @@ export class CenterService {
                     return this.response.sendError(res, StatusCodes.Forbidden, "You do not have access to this patient's record")
                 }
 
-                res.on('finish', async () => {
-                    await this.prisma.patientStudy.update({
-                        where: { study_id: studyId },
-                        data: { status: 'Opened' }
-                    })
+                await this.prisma.patientStudy.update({
+                    where: { study_id: studyId },
+                    data: { status: 'Opened' }
                 })
             }
 
@@ -1190,90 +1268,99 @@ export class CenterService {
     }
 
     async uploadDicomFiles(
-        res: Response,
         studyId: string,
         { centerId }: ExpressUser,
         files: Array<Express.Multer.File>
     ) {
-        try {
-            const study = await this.prisma.patientStudy.findUnique({
-                where: {
-                    centerId,
-                    study_id: studyId,
-                }
-            })
-
-            if (!study) {
-                return this.response.sendError(res, StatusCodes.NotFound, "Patient study not found")
-            }
-
-            let dicoms: IFile[] = []
-            if (files?.length) {
-                try {
-                    for (const file of files) {
-                        const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
-
-                        const transferSyntaxUid = preliminaryDataSet.string('x00020010')
-
-                        console.log(transferSyntaxUid)
-
-                        const dataSet = dicomParser.parseDicom(file.buffer, { TransferSyntaxUID: transferSyntaxUid })
-
-                        const obj = {
-                            patientName: dataSet.string('x00100010'),
-                            patientID: dataSet.string('x00100020'),
-                            studyDate: dataSet.string('x00080020'),
-                            modality: dataSet.string('x00080060'),
-                            studyDescription: dataSet.string('x00081030'),
-                            seriesDescription: dataSet.string('x0008103e'),
-                            institutionName: dataSet.string('x00080080'),
-                            referringPhysicianName: dataSet.string('x00080090'),
-                            patientBirthDate: dataSet.string('x00100030'),
-                            patientSex: dataSet.string('x00100040'),
-                            bodyPartExamined: dataSet.string('x00180015'),
-                        }
-
-                        console.log(obj)
-                    }
-
-                    // const results = await Promise.all(files.map(async file => {
-                    //     const re = validateFile(file, 50 << 20, 'dcm', 'dicom')
-
-                    //     if (re?.status) {
-                    //         return this.response.sendError(res, re.status, re.message)
-                    //     }
-
-                    //     const path = `${centerId}/${studyId}/${genFilename(re.file)}`
-                    //     await this.aws.uploadS3(file, path)
-
-                    //     return {
-                    //         type: re.file.mimetype,
-                    //         path, size: re.file.size,
-                    //         url: this.aws.getS3(path)
-                    //     }
-                    // }))
-
-                    // dicoms = results.filter((result): result is IFile => !!result)
-                } catch (err) {
-                    console.error(err)
-                    // try {
-                    //     await this.aws.removeFiles(dicoms)
-                    // } catch (err) {
-                    //     this.misc.handleServerError(res, err, "Something went wrong while uploading DICOM Files")
-                    //     return
-                    // }
-                }
-            }
-
-            await this.prisma.patientStudy.update({
-                where: { study_id: studyId },
-                data: { dicoms }
-            })
-
-            this.response.sendSuccess(res, StatusCodes.OK, { data: dicoms })
-        } catch (err) {
-            this.misc.handleServerError(res, err, "Error upload DICOM Files")
+        if (files.length === 0) {
+            throw new BadRequestException("No Dicom files were selected")
         }
+
+        const study = await this.prisma.patientStudy.findUnique({
+            where: {
+                centerId,
+                study_id: studyId,
+            }
+        })
+
+        if (!study) {
+            throw new NotFoundException("Patient study not found")
+        }
+
+        let dicoms = []
+        try {
+            const results = files.map(async file => {
+                const extension = getFileExtension(file)
+
+                if (extension !== "dcm") {
+                    throw new UnsupportedMediaTypeException("File is not allowed")
+                }
+
+                const re = validateFile(
+                    file,
+                    10 << 20,
+                    'application/dicom',
+                    'application/octet-stream',
+                    'image/dcm'
+                )
+
+                const formattedFile = {
+                    ...file,
+                    ...(file.mimetype === 'application/octet-stream' && { mimetype: 'image/dcm' })
+                }
+
+                if (re?.status) {
+                    throw new HttpException(re.message, re.status)
+                }
+
+                const preliminaryDataSet = dicomParser.parseDicom(file.buffer, { untilTag: 'x00020010' })
+
+                const transferSyntaxUid = preliminaryDataSet.string('x00020010')
+
+                const dataSet = dicomParser.parseDicom(re.file.buffer, { TransferSyntaxUID: transferSyntaxUid })
+
+                const metadata = {
+                    patientName: dataSet.string('x00100010'),
+                    patientID: dataSet.string('x00100020'),
+                    studyDate: dataSet.string('x00080020'),
+                    modality: dataSet.string('x00080060'),
+                    studyDescription: dataSet.string('x00081030'),
+                    seriesDescription: dataSet.string('x0008103e'),
+                    institutionName: dataSet.string('x00080080'),
+                    referringPhysicianName: dataSet.string('x00080090'),
+                    patientBirthDate: dataSet.string('x00100030'),
+                    patientSex: dataSet.string('x00100040'),
+                    bodyPartExamined: dataSet.string('x00180015'),
+                }
+
+                const path = `${centerId}/${studyId}/${genFilename(re.file)}`
+                await this.aws.uploadS3(formattedFile, path)
+
+                return {
+                    type: re.file.mimetype,
+                    path, size: re.file.size,
+                    url: this.aws.getS3(path),
+                    metadata, transferSyntaxUid,
+                }
+            })
+
+            dicoms = await Promise.all(results)
+        } catch (err) {
+            try {
+                await this.aws.removeFiles(dicoms)
+            } catch (err) {
+                throw err
+            }
+
+            throw err
+        }
+
+        await this.prisma.patientStudy.update({
+            where: { study_id: studyId },
+            data: { dicoms }
+        })
+
+        return dicoms
     }
 
     async bin(res: Response, { centerId }: ExpressUser) {
@@ -1318,5 +1405,69 @@ export class CenterService {
         } catch (err) {
             this.misc.handleServerError(res, err)
         }
+    }
+
+    async fetchStudyDicoms({ token }: DicomTokenDTO) {
+        let tkData: GenerateDicomTokenDTO
+
+        try {
+            tkData = await this.jwtService.verifyAsync(
+                token,
+                {
+                    ignoreExpiration: false,
+                    secret: process.env.JWT_SECRET
+                }
+            ) as GenerateDicomTokenDTO
+        } catch (err) {
+            throw new ForbiddenException("Token has expired")
+        }
+
+        const {
+            sub,
+            mrn,
+            role,
+            studyId,
+            centerId
+        } = tkData
+
+        const patient = await this.prisma.patient.findUnique({
+            where: { mrn, centerId }
+        })
+
+        if (!patient) {
+            throw new NotFoundException("Patient not found")
+        }
+
+        const study = await this.prisma.patientStudy.findUnique({
+            where: {
+                study_id: studyId,
+                patientId: patient.id,
+            },
+            select: { dicoms: true }
+        })
+
+        if (!study) {
+            throw new NotFoundException("Patient Study not found")
+        }
+
+        if (role === "radiologist" || role === "doctor") {
+            const isNotAccessible = await this.isNotAccessibleForPractitioner(sub, patient.id)
+
+            if (isNotAccessible) {
+                throw new ForbiddenException("You do not have access to this patient's record")
+            }
+
+            await this.prisma.patientStudy.update({
+                where: { study_id: studyId },
+                data: { status: 'Opened' }
+            })
+        }
+
+        const dicoms = study.dicoms as unknown as IFile[]
+        const formattedDicoms = dicoms
+            .filter(dicom => dicom?.url)
+            .map(dicom => ({ ...dicom, url: `wadouri:${dicom.url}` }))
+
+        return formattedDicoms
     }
 }

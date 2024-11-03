@@ -22,12 +22,14 @@ export const transformMRN = (patientCount: number) => {
 }
 
 export const getFileExtension = (file: Express.Multer.File | string): string | undefined => {
-    let mimetype: string | undefined
+    let mimetype: string
 
     if (typeof file === "object" && file.mimetype) {
         mimetype = file.mimetype
     } else if (typeof file === "string") {
         mimetype = file
+    } else {
+        throw new Error("Invalid input: file must be either an object with a mimetype or a string.")
     }
 
     let extension: string | undefined
@@ -35,6 +37,7 @@ export const getFileExtension = (file: Express.Multer.File | string): string | u
     switch (mimetype) {
         case 'application/octet-stream':
         case 'application/dicom':
+        case 'image/dcm':
             extension = 'dcm'
             break
         case 'video/mp4':
@@ -69,12 +72,44 @@ export const getFileExtension = (file: Express.Multer.File | string): string | u
             extension = 'pdf'
             break
         case 'application/msword':
-            extension = 'doc'
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            extension = 'docx'
             break
         default:
-            console.warn(`Unsupported MIME type: ${mimetype}`)
-            break
+            throw new Error(`Unsupported MIME type: ${mimetype}`)
     }
 
     return extension
+}
+
+export const removeNullFields = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(removeNullFields)
+    } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+        return Object.keys(obj).reduce((acc, key) => {
+            const value = obj[key]
+            if (value !== null) {
+                acc[key] = removeNullFields(value)
+            }
+            return acc
+        }, {} as { [key: string]: any })
+    } else {
+        return obj
+    }
+}
+
+export const normalizePhoneNumber = (phoneNumber: string): string => {
+    let normalized = phoneNumber.replace(/\D/g, '')
+
+    if (normalized.startsWith('0')) {
+        normalized = normalized.slice(1)
+    }
+
+    if (normalized.startsWith('00')) {
+        normalized = normalized.slice(2)
+    } else if (normalized.startsWith('+')) {
+        normalized = normalized.slice(1)
+    }
+
+    return normalized
 }

@@ -1,4 +1,8 @@
-import { ObjectId } from 'mongodb'
+import {
+    OrganizationSignupDTO,
+    PractitionerSignupDTO,
+} from './dto/signup.dto'
+import { v4 as uuidv4 } from 'uuid'
 import { validateFile } from 'utils/file'
 import { Request, Response } from 'express'
 import { AwsService } from 'lib/aws.service'
@@ -10,10 +14,10 @@ import { getIpAddress } from 'helpers/getIPAddress'
 import { EmailDTO, LoginDTO } from './dto/login.dto'
 import { ResponseService } from 'lib/response.service'
 import { ChangePasswordDTO } from './dto/password.dto'
+import { GenerateDicomTokenDTO } from './dto/dicom.dto'
 import { EncryptionService } from 'lib/encryption.service'
 import { genFilename, genPassword } from 'helpers/generator'
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { OrganizationSignupDTO, PractitionerSignupDTO } from './dto/signup.dto'
 
 @Injectable()
 export class AuthService {
@@ -51,10 +55,12 @@ export class AuthService {
 
             await this.prisma.practitioner.create({
                 data: {
-                    email, fullname, address, affiliation, zip_code,
-                    phone, city, state, country, password, practiceNumber,
                     role: 'radiologist', type: 'system', status: 'PENDING',
-                }
+                    email, fullname, affiliation, password, practiceNumber,
+                    demographic: {
+                        create: { phone, city, state, country, address, zip_code }
+                    },
+                },
             })
 
             // TODO: mailing
@@ -89,24 +95,32 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.Conflict, "Organization already exist")
             }
 
-            const id = new ObjectId().toString()
+            const id = uuidv4()
 
             password = await this.encryption.hashAsync(password)
 
             await this.prisma.$transaction([
                 this.prisma.center.create({
                     data: {
-                        status: 'PENDING', ip: getIpAddress(req),
-                        email, centerName: organizationName, city,
-                        id, address, state, country, zip_code, phone,
+                        id: id,
+                        status: 'PENDING',
+                        email, centerName: organizationName,
+                        demographic: {
+                            create: {
+                                city, address, state,
+                                ip: getIpAddress(req),
+                                country, zip_code, phone,
+                            }
+                        }
                     }
                 }),
                 this.prisma.centerAdmin.create({
                     data: {
-                        fullname, email, phone,
-                        password, superAdmin: true,
-                        status: 'PENDING', role: 'centerAdmin',
+                        superAdmin: true,
+                        fullname, email, password,
                         center: { connect: { id } },
+                        demographic: { create: { phone } },
+                        status: 'PENDING', role: 'centerAdmin',
                     }
                 })
             ])
@@ -314,7 +328,12 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.BadRequest, "No image was selected")
             }
 
-            const re = validateFile(file, 5 << 20, 'png', 'jpg', 'jpeg')
+            const re = validateFile(
+                file,
+                5 << 20,
+                'image/png',
+                'image/jpeg'
+            )
 
             if (re?.status) {
                 return this.response.sendError(res, re.status, re.message)
@@ -367,5 +386,27 @@ export class AuthService {
                 return this.response.sendError(res, StatusCodes.InternalServerError, 'Internal server error')
             }
         }
+    }
+
+    async generateDicomToken(
+        res: Response,
+        { sub, centerId, role }: ExpressUser,
+        { studyId, mrn }: GenerateDicomTokenDTO
+    ) {
+        const study = await this.prisma.patientStudy.findUnique({
+            where: {
+                centerId,
+                patient: { mrn },
+                study_id: studyId,
+            }
+        })
+
+        if (!study) {
+            return this.response.sendError(res, StatusCodes.NotFound, "Study not found")
+        }
+
+        const token = await this.misc.generateNewDicomToken({ mrn, studyId, centerId, sub, role })
+
+        this.response.sendSuccess(res, StatusCodes.OK, { token })
     }
 }
